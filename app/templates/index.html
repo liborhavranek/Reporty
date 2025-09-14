@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Reporter — přehled testů{% endblock %}
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page">
+
+
+<section class="section-hero">
+  <div class="container">
+
+    <header class="page-title-wrap">
+      <!-- eyebrow jsme zrušili -->
+      <h1 class="page-title">Centrum reportů</h1>
+      <p class="page-lead">
+        Rychlý, čitelný náhled na poslední běhy. Jedno místo pro souhrny, chyby i detailní logy.
+        Žádná instalace — jen otevři a dívej se.
+      </p>
+      <div class="page-cta">
+        <a class="btn btn-primary" href="{{ url_for('bp.public_projects_list') }}">Otevřít reporty</a>
+        <a class="btn btn-ghost" href="https://liborhavranek.cz" target="_blank" rel="noopener">Jak to funguje</a>
+      </div>
+    </header>
+
+    <div class="cards-row">
+      <article class="card-glass">
+        <div class="card-head">
+          <span class="card-tag">Legenda</span>
+          <h3 class="card-title">Stavy testů</h3>
+        </div>
+        <ul class="legend-list">
+          <li><span class="status sm ok">PASSED</span> — Prošlo</li>
+          <li><span class="status sm fail">FAILED</span> — Chyba</li>
+          <li><span class="status sm skip">SKIPPED</span> — Přeskočeno</li>
+        </ul>
+        <p class="card-foot-note text-muted small">V detailu jsou testy v pořadí běhu.</p>
+      </article>
+
+      <article class="card-glass">
+        <div class="card-head">
+          <span class="card-tag">Přehled</span>
+          <h3 class="card-title">Co obsahuje report</h3>
+        </div>
+        <ul class="bullets">
+          <li>Souhrn posledních běhů: celkem / prošlo / chyby / přesk.</li>
+          <li>Skupiny dle <code class="mono">describe</code> s počty a časy.</li>
+          <li>Detaily všech testů v pořadí běhu.</li>
+        </ul>
+      </article>
+
+      <article class="card-glass">
+        <div class="card-head">
+          <span class="card-tag">Přístup</span>
+          <h3 class="card-title">Kdo co vidí</h3>
+        </div>
+        <p class="text-muted">
+          Admin část slouží jen k nahrávání CSV a je chráněná.
+          Veřejný modul funguje jako čtečka výsledků.
+        </p>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+
+
+</div>
+
+{% endblock %}

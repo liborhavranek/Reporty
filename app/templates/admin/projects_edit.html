@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Upravit projekt – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass wide">
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Admin</div>
+        <h1 class="title">Upravit <span class="accent">{{ project.name }}</span></h1>
+        <p class="sub" style="margin-top:6px;">
+          ID: <code class="mono">{{ project.id }}</code>
+          · vytvořeno: <code class="mono">{{ project.created_at.strftime('%Y-%m-%d %H:%M') if project.created_at else '—' }}</code>
+          · naposledy: <code class="mono">{{ project.updated_at.strftime('%Y-%m-%d %H:%M') if project.updated_at else '—' }}</code>
+        </p>
+      </div>
+
+      <div class="cta-row" style="margin:0;">
+        <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">← Zpět na projekty</a>
+      </div>
+    </div>
+
+    {# ==== HLAVNÍ EDIT FORM ==== #}
+    <form method="post" enctype="multipart/form-data"
+          class="form grid-2"
+          action="{{ url_for('admin.projects_edit', project_id=project.id) }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-row span-2">
+        <label for="{{ form.name.id }}">Název projektu</label>
+        {{ form.name(class="input", placeholder="Název…") }}
+        {% if form.name.errors %}<div class="error">{{ form.name.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <label for="{{ form.type.id }}">Typ</label>
+        {{ form.type(class="input") }}
+        {% if form.type.errors %}<div class="error">{{ form.type.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <label for="{{ form.visibility.id }}">Viditelnost</label>
+        {{ form.visibility(class="input") }}
+        {% if form.visibility.errors %}<div class="error">{{ form.visibility.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row span-2">
+        <label for="{{ form.description.id }}">Popis</label>
+        {{ form.description(class="input", rows="4", placeholder="Popis…") }}
+        {% if form.description.errors %}<div class="error">{{ form.description.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <label for="{{ form.passphrase.id }}">Heslo k projektu</label>
+        {{ form.passphrase(class="input", placeholder="Nech prázdné pro zachování stávajícího") }}
+        <div class="hint">Pokud necháš prázdné, heslo zůstane. Zaškrtni „Odebrat heslo“ pro zrušení.</div>
+      </div>
+      <div class="form-row" style="align-self:end;">
+        <label class="checkbox" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="clear_passphrase" value="1" style="width:16px;height:16px;">
+          <span>Odebrat heslo</span>
+        </label>
+      </div>
+
+      <div class="form-row">
+        <label>Aktuální logo</label>
+        <div style="display:flex; align-items:center; gap:12px;">
+          {% if project.logo_path %}
+            <img
+              src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}"
+              alt="Logo {{ project.name }}" class="logo"
+              style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid var(--line-weak-16);background:rgba(255,255,255,.06);">
+          {% else %}
+            <div class="logo placeholder" style="width:48px;height:48px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line-weak-16);color:var(--color-muted);">∎</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="logo">Nové logo (png, jpg, webp, svg)</label>
+        <input id="logo" type="file" name="logo" class="input" accept=".png,.jpg,.jpeg,.webp,.svg">
+        <div class="hint">Max {{ (config.MAX_CONTENT_LENGTH // (1024*1024)) if config.MAX_CONTENT_LENGTH else 5 }} MB.</div>
+      </div>
+
+      <div class="form-row span-2">
+        <label class="checkbox" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="remove_logo" value="1" style="width:16px;height:16px;">
+          <span>Odebrat logo</span>
+        </label>
+      </div>
+
+      <div class="form-row span-2" style="margin-top:6px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary" type="submit">Uložit změny</button>
+        <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">Zrušit</a>
+      </div>
+    </form>
+
+    {# ==== SAMOSTATNÝ DELETE FORM (MIMO edit form) ==== #}
+    <form method="post"
+          action="{{ url_for('admin.projects_delete', project_id=project.id) }}"
+          onsubmit="return confirm('Opravdu smazat projekt {{ project.name }}? Tato akce je nevratná.');"
+          style="margin-top:10px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button class="btn btn-danger" type="submit">Smazat projekt</button>
+
+    </form>
+
+  </div>
+</section>
+{% endblock %}

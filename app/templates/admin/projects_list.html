@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Projekty (Admin){% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass wide">
+
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Admin</div>
+        <h1 class="title"><span class="accent">Projekty</span></h1>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('bp.public_projects_list') }}" class="btn btn-ghost">Veřejný přehled</a>
+        <a href="{{ url_for('admin.projects_new') }}" class="btn btn-primary">+ Nový projekt</a>
+      </div>
+    </div>
+
+    <!-- Toolbar: vyhledávání + KPI -->
+ <div class="admin-toolbar">
+  <form class="search" method="get" action="{{ url_for('admin.projects') }}">
+    <input
+      type="search"
+      name="q"
+      placeholder="Hledat projekt podle názvu…"
+      value="{{ q or '' }}"
+      aria-label="Hledat projekt podle názvu"
+    >
+  </form>
+
+  <div class="toolbar-actions">
+    {% if q %}
+      <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">Zrušit filtr</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <span class="kpi-label">Počet projektů</span>
+    <div class="kpi-value">{{ projects|length }}</div>
+  </div>
+
+  <div class="kpi">
+    <span class="kpi-label">Typ: Web</span>
+    <div class="kpi-value">
+      {{ projects|selectattr('type.value','equalto','web')|list|length }}
+    </div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-label">Typ: E2E</span>
+    <div class="kpi-value">
+      {{ projects|selectattr('type.value','equalto','e2e')|list|length }}
+    </div>
+  </div>
+</div>
+
+    {% if projects and projects|length %}
+      <div class="table-wrap">
+        <table class="table nice" aria-label="Tabulka projektů">
+          <thead>
+            <tr>
+              <th>Logo</th>
+              <th>Název</th>
+              <th>Typ</th>
+              <th>Viditelnost</th>
+              <th>Vytvořeno</th>
+              <th class="col-actions">Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in projects %}
+              <tr>
+                <td class="cell-logo">
+                  {% if p.logo_path %}
+                    <img src="{{ url_for('bp.storage_logos', filename=p.logo_path) }}" alt="" class="logo">
+                  {% else %}
+                <img src="{{ url_for('static', filename='images/code.png') }}" alt="" class="logo">
+                  {% endif %}
+                </td>
+
+                <td class="cell-name">
+                  <div class="name">{{ p.name }}</div>
+                  {% if p.description %}
+                    <div class="desc">{{ p.description }}</div>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% set t = p.type.value %}
+                  <span class="badge {{ 'badge-e2e' if t=='e2e' else 'badge-web' }}">{{ t|upper }}</span>
+                </td>
+
+                <td>
+                  {% set v = p.visibility.value %}
+                  <span class="badge {{ 'badge-public' if v=='public' else ('badge-link' if v=='link-only' else 'badge-private') }}">
+                    {{ 'Public' if v=='public' else ('Na odkaz' if v=='link-only' else 'Soukromý') }}
+                  </span>
+                </td>
+
+                <td class="cell-date">
+                  {{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '—' }}
+                </td>
+
+                <td class="col-actions">
+                  <div class="actions">
+                    <a class="btn btn-ghost" href="{{ url_for('admin.project_detail_admin', project_id=p.id) }}">Spravovat</a>
+                    <a class="btn btn-ghost" href="{{ url_for('admin.projects_edit', project_id=p.id) }}" aria-label="Upravit {{ p.name }}">Upravit</a>
+                    <form method="post"
+                          action="{{ url_for('admin.projects_delete', project_id=p.id) }}"
+                          onsubmit="return confirm('Opravdu smazat projekt „{{ p.name }}“?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-danger" aria-label="Smazat {{ p.name }}">Smazat</button>
+                    </form>
+                  </div>
+                </td>
+
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">
+        <p class="sub">Zatím žádné projekty.</p>
+        <a href="{{ url_for('admin.projects_new') }}" class="btn btn-primary">Vytvořit první projekt</a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

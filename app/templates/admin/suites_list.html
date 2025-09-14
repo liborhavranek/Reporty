@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Sady – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full admin-dense admin-suites">
+  <div class="card-glass wide">
+
+    <header class="project-head admin-head">
+      <div class="project-meta admin-meta">
+        {% if project.logo_path %}
+          <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
+        {% else %}
+          <div class="project-logo placeholder">{{ project.name[:1] }}</div>
+        {% endif %}
+        <div class="meta-text">
+          <div class="eyebrow">Admin · Projekt</div>
+          <h1 class="project-title">{{ project.name }} <span class="muted">— Sady</span></h1>
+          {% if project.description %}<p class="project-sub clamp-2">{{ project.description }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="cta-row admin-head__actions">
+        <a class="btn btn-primary" href="{{ url_for('admin.suites_new', project_id=project.id) }}">+ Nová sekce</a>
+        <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">← Zpět na projekty</a>
+      </div>
+    </header>
+
+    {% if sections and sections|length %}
+      <div class="board-sections">
+        {% for sec in sections %}
+          <article class="suite-card">
+            <header class="suite-card__head">
+              <div class="suite-hgroup">
+                <span class="suite-chip">SEKCE</span>
+                <h3 class="suite-title">{{ sec.name }}</h3>
+              </div>
+              <div class="suite-actions">
+                <a class="btn btn-primary btn-sm"
+                   href="{{ url_for('admin.suites_new', project_id=project.id, parent_id=sec.id) }}">+ Nová sekvence</a>
+                <a class="btn btn-ghost btn-sm"
+                   href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=sec.id) }}">Upravit</a>
+                <form method="post"
+                      action="{{ url_for('admin.suites_delete', project_id=project.id, suite_id=sec.id) }}"
+                      onsubmit="return confirm('Smazat sekci {{ sec.name }} vč. jejích sekvencí?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
+                </form>
+              </div>
+            </header>
+
+            {% if sec.description %}<p class="suite-desc clamp-3">{{ sec.description }}</p>{% endif %}
+
+            {% set children = sec.children|sort(attribute='order_index') %}
+            {% if children and children|length %}
+              <div class="tiles">
+                {% for ch in children %}
+                  <article class="tile" data-suite="{{ ch.id }}">
+                    <div class="tile-head">
+                      <span class="suite-chip thin">SEKVENCE</span>
+                      <div class="tile-title">{{ ch.name }}</div>
+                    </div>
+
+                    {% if ch.description %}<p class="tile-desc clamp-2">{{ ch.description }}</p>{% endif %}
+
+                    <form class="quick-upload"
+                          method="post"
+                          enctype="multipart/form-data"
+                          action="{{ url_for('admin.runs_upload', project_id=project.id, suite_id=ch.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input class="qu-file" type="file" name="csv" accept=".csv,text/csv" hidden>
+                      <div class="dropzone" tabindex="0"
+                           onclick="this.closest('form').querySelector('.qu-file').click()">
+                        <div class="dz-icon">⬆︎</div>
+                        <div class="dz-title">Přetáhni CSV sem</div>
+                        <div class="dz-sub">…nebo klikni pro výběr</div>
+                      </div>
+                    </form>
+
+                    {% set last = last_by_suite.get(ch.id) %}
+                    <div class="tile-meta">
+                      <span class="badge dim"><span>Naposledy nahráno:</span>
+                        <b>{% if last %}<time datetime="{{ last.strftime('%Y-%m-%dT%H:%M') }}">{{ last.strftime('%Y-%m-%d %H:%M') }}</time>{% else %}—{% endif %}</b>
+                      </span>
+                    </div>
+
+                    <div class="tile-actions">
+                      <a class="btn btn-primary btn-sm"
+                         href="{{ url_for('admin.runs_list', project_id=project.id, suite_id=ch.id) }}">Běhy / CSV</a>
+                      <a class="btn btn-ghost btn-sm"
+                         href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=ch.id) }}">Upravit</a>
+                      <form method="post"
+                            action="{{ url_for('admin.suites_delete', project_id=project.id, suite_id=ch.id) }}"
+                            onsubmit="return confirm('Smazat sekvenci {{ ch.name }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
+                      </form>
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty"><p class="sub">Tato sekce nemá žádné sekvence.</p></div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">
+        <p class="sub">Zatím žádné sekce.</p>
+        <a class="btn btn-primary" href="{{ url_for('admin.suites_new', project_id=project.id) }}">Přidat první sekci</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.quick-upload .qu-file').forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length > 0) input.closest('form').submit();
+    });
+  });
+
+  document.querySelectorAll('.quick-upload .dropzone').forEach(zone => {
+    const form = zone.closest('form');
+    const fileInput = form.querySelector('.qu-file');
+
+    ['dragenter','dragover'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); zone.classList.add('is-dragover'); })
+    );
+    ['dragleave','drop'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); zone.classList.remove('is-dragover'); })
+    );
+
+    zone.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      if (!files || !files.length) return;
+      const file = files[0];
+      if (!file.name.toLowerCase().endsWith('.csv')) { alert('Povoleny jsou pouze .csv soubory.'); return; }
+      const dt = new DataTransfer(); dt.items.add(file);
+      fileInput.files = dt.files; form.submit();
+    });
+  });
+});
+</script>
+{% endblock %}

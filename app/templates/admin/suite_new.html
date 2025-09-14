@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Nová sada – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass wide">
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Admin · Projekt</div>
+        <h1 class="title">Nová <span class="accent">sada</span></h1>
+        <p class="sub">Vyber “Nadřazenou sekci” = vytvoříš SEKVENCi. Pokud necháš “— žádná”, vytvoříš SEKCI.</p>
+      </div>
+      <a class="btn btn-ghost" href="{{ url_for('admin.suites', project_id=project.id) }}">← Zpět na sady</a>
+    </div>
+
+
+    <form method="post" class="form grid-2" action="{{ url_for('admin.suites_new', project_id=project.id) }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-row span-2">
+        <label for="{{ form.name.id }}">Název</label>
+        {{ form.name(class="input", placeholder="Např. Checkout, Přihlášení…") }}
+      </div>
+
+      <div class="form-row">
+        <label for="{{ form.parent_id.id }}">Nadřazená sekce</label>
+        {{ form.parent_id(class="input") }}
+        <div class="hint">„— žádná“ = vytvoříš SEKCI. Jinak se vytvoří SEKVENCE uvnitř zvolené sekce.</div>
+      </div>
+
+      <div class="form-row">
+        <label for="{{ form.order_index.id }}">Pořadí</label>
+        {{ form.order_index(class="input") }}
+      </div>
+
+      <div class="form-row span-2">
+        <label for="{{ form.description.id }}">Popis</label>
+        {{ form.description(class="input", rows="4") }}
+      </div>
+
+      <div class="form-row span-2" style="display:flex; align-items:center; gap:10px;">
+        {{ form.is_active() }} <label for="{{ form.is_active.id }}">Aktivní</label>
+      </div>
+
+      <div class="form-row span-2" style="display:flex; gap:12px;">
+        <button class="btn btn-primary" type="submit">Uložit</button>
+        <a class="btn btn-ghost" href="{{ url_for('admin.suites', project_id=project.id) }}">Zrušit</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

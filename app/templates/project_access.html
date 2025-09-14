@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Přístup k projektu – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass access">
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Zabezpečený projekt</div>
+        <h1 class="title"><span class="accent">{{ project.name }}</span></h1>
+        <p class="sub" style="margin-top:6px;">Pro zobrazení obsahu zadej heslo.</p>
+      </div>
+    </div>
+
+    <form method="post" class="form" action="{{ url_for('bp.project_access', slug=project.slug, next=next_url) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+          <label for="password">Heslo k projektu</label>
+          <div class="input-wrap">
+            <input id="password"
+                   name="password"
+                   type="password"
+                   class="input"
+                   placeholder="••••••••"
+                   required
+                   autofocus>
+            <button type="button"
+                    class="eye-btn js-eye"
+                    aria-controls="password"
+                    aria-pressed="false"
+                    aria-label="Zobrazit heslo">Zobrazit</button>
+          </div>
+        </div>
+      <div class="cta-row">
+        <button class="btn btn-primary" type="submit">Odemknout</button>
+        <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">Zrušit</a>
+      </div>
+    </form>
+  </div>
+</section>
+<script>
+  (function(){
+    const eye = document.querySelector('.js-eye');
+    const input = document.getElementById('password');
+    if(!eye || !input) return;
+    eye.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.textContent = show ? 'Skrýt' : 'Zobrazit';
+      input.focus();
+    });
+  })();
+</script>
+{% endblock %}

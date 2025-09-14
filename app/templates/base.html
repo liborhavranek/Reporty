@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/code.png') }}">
+  <title>{% block title %}Reporty{% endblock %}</title>
+
+  <!-- tvoje globální styly s tokeny -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles2.css') }}">
+  <!-- doplněk pro tuto stránku -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reports-landing.css') }}">
+</head>
+<body>
+  {% include 'navigation.html' %}
+
+ <main>
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

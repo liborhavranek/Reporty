@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Report – {{ report.file_name or rel_path }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass wide">
+
+    <!-- Hlavička -->
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Report</div>
+        <h1 class="title"><span class="accent">{{ report.file_name or rel_path }}</span></h1>
+      </div>
+      <div class="cta-row" style="margin:0;">
+        <a class="btn btn-file"
+           href="{{ url_for('bp.storage_reports', filename=rel_path) }}"
+           target="_blank" rel="noopener">
+          <span class="ic">⤓</span> Otevřít CSV
+        </a>
+      </div>
+    </div>
+
+    {# procenta pro souhrnný bar #}
+    {% set tot   = report.summary.total or 0 %}
+    {% set okp   = ((100.0 * (report.summary.passed  or 0)  / tot)|round(1)) if tot else 0 %}
+    {% set failp = ((100.0 * (report.summary.failed  or 0)  / tot)|round(1)) if tot else 0 %}
+    {% set skipp = ((100.0 * (report.summary.skipped or 0)  / tot)|round(1)) if tot else 0 %}
+
+    <!-- Přehledové karty -->
+    <div class="overview-grid">
+      <div class="card-surface">
+        <div class="card-head"><h3 class="card-title">Souhrn</h3></div>
+        <div class="stats">
+          <div class="summarybar" style="--okp:{{ okp }};--failp:{{ failp }};--skipp:{{ skipp }};"></div>
+          <div class="statsline">
+            <span class="chip">{{ report.summary.total }} testů</span>
+            <span class="chip ok">✓ {{ report.summary.passed }}</span>
+            <span class="chip fail">✕ {{ report.summary.failed }}</span>
+            <span class="chip skip">∘ {{ report.summary.skipped }}</span>
+            <span class="chip mono">Pass rate {{ report.summary.pass_rate }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-surface">
+        <div class="card-head"><h3 class="card-title">Čas</h3></div>
+        <ul class="mini-list">
+          <li>Délka: <b>{{ report.summary.duration_fmt }}</b></li>
+        </ul>
+      </div>
+
+      <div class="card-surface">
+        <div class="card-head"><h3 class="card-title">Soubor</h3></div>
+        <ul class="mini-list">
+          <li>Název: <b>{{ report.file_name or rel_path.split('/')[-1] }}</b></li>
+          <li>
+            <a class="btn btn-file"
+               href="{{ url_for('bp.storage_reports', filename=rel_path) }}"
+               target="_blank" rel="noopener">
+              <span class="ic">⤓</span> Otevřít CSV
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    {% if report.groups and report.groups|length %}
+      <div class="report-groups">
+        {% for g in report.groups %}
+  <article class="rg-card">
+    <details>  {# ← odstraněno "open", tedy defaultně zavřené #}
+      <summary class="rg-head">
+        <div class="rg-title">
+          <span class="rg-caret">▸</span>
+          {{ g.describe }}
+        </div>
+        <div class="rg-meta">
+          <span class="chip total mono">{{ g.total }} testů</span>
+          <span class="chip ok">✓ {{ g.passed }}</span>
+          <span class="chip fail">✕ {{ g.failed }}</span>
+          {% if g.skipped %}<span class="chip skip">∘ {{ g.skipped }}</span>{% endif %}
+          <span class="chip dim mono">{{ g.duration_fmt }}</span>
+        </div>
+      </summary>
+
+      <div class="table-wrap">
+        <table class="table report">
+          <thead>
+            <tr>
+              <th>Test</th>
+              <th class="th-status">Stav</th>
+              <th class="th-right">Doba</th>
+              <th class="th-right">Čas (lokálně)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in g.tests %}
+              <tr>
+                <td class="cell-test">{{ t.test }}</td>
+                <td class="cell-status">
+                  {% if t.status == 'passed' %}
+                    <span class="status ok">PASSED</span>
+                  {% elif t.status == 'failed' %}
+                    <span class="status fail">FAILED</span>
+                  {% elif t.status == 'skipped' %}
+                    <span class="status skip">SKIPPED</span>
+                  {% else %}
+                    <span class="status">{{ t.status|upper }}</span>
+                  {% endif %}
+                </td>
+                <td class="cell-num">{{ t.duration_fmt }}</td>
+                <td class="cell-num">{{ t.timestampLocal or t.timestamp }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </article>
+{% endfor %}
+
+      </div>
+    {% else %}
+      <div class="empty"><p class="sub">V CSV nejsou žádné záznamy.</p></div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

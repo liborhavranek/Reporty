@@ -1,0 +1,25 @@
+<header class="topbar" role="navigation" aria-label="Hlavní navigace">
+  <div class="topbar-wrap">
+    <a class="brand" href="/">Reporty</a>
+
+    <!-- Hamburger (bez JS) -->
+    <input id="nav-toggle" class="nav-toggle" type="checkbox" aria-hidden="true">
+    <label class="nav-burger" for="nav-toggle" aria-label="Otevřít menu" aria-controls="nav"></label>
+
+    <nav class="nav" id="nav">
+      <a href="https://liborhavranek.cz/" target="_blank" rel="noopener">liborhavranek.cz</a>
+      <a href="/">Domů</a>
+
+      {# Reporty: admin -> /admin/projects, public -> /projects #}
+      <a href="{{ url_for('admin.projects') if is_admin else url_for('bp.public_projects_list') }}">Reporty</a>
+
+      {# Administrace / Logout #}
+      {% if is_admin %}
+        <a href="{{ url_for('admin.projects') }}">Administrace</a>
+        <a href="{{ url_for('admin.logout') }}">Odhlásit</a>
+      {% else %}
+        <a href="{{ url_for('admin.login', next=request.path) }}">Přihlásit</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>

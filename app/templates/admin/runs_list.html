@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Běhy – {{ project.name }} / {{ suite.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full">
+  <div class="card-glass wide runs-admin">
+
+    <div class="header-row" style="align-items:center;">
+      <div>
+        <div class="eyebrow">Admin</div>
+        <h1 class="title">Běhy – <span class="accent">{{ project.name }}</span> / {{ suite.name }}</h1>
+        <p class="sub" style="margin-top:6px;">Nahrávej CSV a hned vidíš v seznamu.</p>
+      </div>
+      <div class="cta-row" style="margin:0;">
+        <a class="btn btn-ghost" href="{{ url_for('admin.suites', project_id=project.id) }}">← Zpět na sekce</a>
+      </div>
+    </div>
+    <!-- Rychlé nahrání -->
+    <form class="form" method="post" enctype="multipart/form-data"
+          action="{{ url_for('admin.runs_upload', project_id=project.id, suite_id=suite.id) }}"
+          style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="file" name="csv" accept=".csv" required class="input" style="max-width:420px;">
+      <input type="text" name="label" placeholder="Krátký název (volitelné)" class="input" style="max-width:320px;">
+      <button class="btn btn-primary" type="submit">Nahrát CSV</button>
+    </form>
+
+    {% if runs and runs|length %}
+      <div class="table-wrap" style="margin-top:16px;">
+        <table class="table nice runs-table">
+          <thead>
+            <tr>
+              <th style="width:42%">Název / soubor</th>
+              <th>Souhrn</th>
+              <th style="white-space:nowrap">Vytvořeno</th>
+              <th class="col-actions">Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in runs %}
+              {% set base = r.csv_path.rsplit('/', 1)[-1] %}
+              {% set t = (r.stats.total or 0) if r.stats else 0 %}
+              {% set okp   = ((100.0 * r.stats.passed  / t)|round(1))  if t else 0 %}
+              {% set failp = ((100.0 * r.stats.failed  / t)|round(1))  if t else 0 %}
+              {% set skipp = ((100.0 * r.stats.skipped / t)|round(1))  if t else 0 %}
+              <tr>
+                <td class="cell-name">
+                  <div class="name ellip">{{ r.label or base }}</div>
+                  <div class="meta-line"><code class="mono ellip">{{ base }}</code></div>
+                </td>
+
+                <td class="cell-stats">
+                  {% if r.stats %}
+                    <div class="stats">
+                      <div class="statsbar" style="--okp:{{ okp }};--failp:{{ failp }};--skipp:{{ skipp }};"></div>
+                      <div class="statsline">
+                        <span class="muted">{{ r.stats.total }} testů</span>
+                        <span class="ok">✓ {{ r.stats.passed }}</span>
+                        <span class="fail">✕ {{ r.stats.failed }}</span>
+                        <span class="skip">∘ {{ r.stats.skipped }}</span>
+                        <span class="dur mono">{{ r.stats.duration_fmt }}</span>
+                      </div>
+                    </div>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+
+                <td class="cell-date mono">
+                  {{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}
+                </td>
+
+                <td class="actions">
+                  <div class="cta-row" style="margin:0; gap:8px;">
+                    <a class="btn btn-primary btn-sm"
+                       href="{{ url_for('bp.report_view', file=r.csv_path) }}">Zobrazit</a>
+                    <a class="btn btn-ghost btn-sm"
+                       href="{{ url_for('admin.storage_reports', filename=r.csv_path) }}"
+                       target="_blank" rel="noopener">CSV</a>
+                    <form method="post"
+                          action="{{ url_for('admin.runs_delete', project_id=project.id, suite_id=suite.id, run_id=r.id) }}"
+                          onsubmit="return confirm('Smazat tento běh?');" style="display:inline;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-ghost btn-sm" type="submit"
+                              style="border-color: rgba(255,107,107,.45); color:#ff6b6b;">
+                        Smazat
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty"><p class="sub">Zatím žádné běhy.</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
