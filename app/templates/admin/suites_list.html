@@ -5,7 +5,8 @@
 <section class="hero-report full admin-dense admin-suites">
   <div class="card-glass wide">
 
-    <header class="project-head admin-head">
+    {# ===== Projekt – hlavička (samostatná karta) ===== #}
+    <header class="project-head admin-head" style="margin-bottom:12px;">
       <div class="project-meta admin-meta">
         {% if project.logo_path %}
           <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
@@ -24,16 +25,33 @@
       </div>
     </header>
 
+    {# ===== Toolbar nad sekcemi ===== #}
+    <div class="admin-toolbar">
+      <div class="search">
+        <input id="seq-search" type="search" placeholder="Hledat v sekvencích (název/desc)…" aria-label="Hledat sekvence">
+      </div>
+      <div class="cta-row">
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-collapse">Sbalit vše</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-expand">Rozbalit vše</button>
+      </div>
+    </div>
+
     {% if sections and sections|length %}
       <div class="board-sections">
+
+        {# ===== Jednotlivé sekce jako samostatné karty ===== #}
         {% for sec in sections %}
-          <article class="suite-card">
+          {% set children = sec.children|sort(attribute='order_index') %}
+          <article class="suite-card js-section" data-section="{{ sec.id }}">
             <header class="suite-card__head">
               <div class="suite-hgroup">
                 <span class="suite-chip">SEKCE</span>
-                <h3 class="suite-title">{{ sec.name }}</h3>
+                <h3 class="suite-title ellip" title="{{ sec.name }}">{{ sec.name }}</h3>
+                {% if sec.description %}<div class="suite-desc muted clamp-2">{{ sec.description }}</div>{% endif %}
               </div>
+
               <div class="suite-actions">
+                <span class="badge dim" title="Počet sekvencí">{{ children|length }}&nbsp;sekvencí</span>
                 <a class="btn btn-primary btn-sm"
                    href="{{ url_for('admin.suites_new', project_id=project.id, parent_id=sec.id) }}">+ Nová sekvence</a>
                 <a class="btn btn-ghost btn-sm"
@@ -44,19 +62,17 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
                 </form>
+                <button class="btn btn-ghost btn-sm js-toggle" type="button" aria-expanded="true">Sbalit</button>
               </div>
             </header>
 
-            {% if sec.description %}<p class="suite-desc clamp-3">{{ sec.description }}</p>{% endif %}
-
-            {% set children = sec.children|sort(attribute='order_index') %}
             {% if children and children|length %}
-              <div class="tiles">
+              <div class="tiles js-tiles">
                 {% for ch in children %}
-                  <article class="tile" data-suite="{{ ch.id }}">
+                  <article class="tile js-seq" data-suite="{{ ch.id }}" data-name="{{ ch.name|lower }}">
                     <div class="tile-head">
                       <span class="suite-chip thin">SEKVENCE</span>
-                      <div class="tile-title">{{ ch.name }}</div>
+                      <div class="tile-title ellip" title="{{ ch.name }}">{{ ch.name }}</div>
                     </div>
 
                     {% if ch.description %}<p class="tile-desc clamp-2">{{ ch.description }}</p>{% endif %}
@@ -112,25 +128,26 @@
   </div>
 </section>
 
+{# ===== Interakce (vyhledávání, collapse/expand, drag&drop) ===== #}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Quick-upload: auto-submit
   document.querySelectorAll('.quick-upload .qu-file').forEach(input => {
     input.addEventListener('change', () => {
       if (input.files && input.files.length > 0) input.closest('form').submit();
     });
   });
 
+  // Drag & drop CSV
   document.querySelectorAll('.quick-upload .dropzone').forEach(zone => {
     const form = zone.closest('form');
     const fileInput = form.querySelector('.qu-file');
-
     ['dragenter','dragover'].forEach(evt =>
-      zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); zone.classList.add('is-dragover'); })
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('is-dragover'); })
     );
     ['dragleave','drop'].forEach(evt =>
-      zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); zone.classList.remove('is-dragover'); })
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('is-dragover'); })
     );
-
     zone.addEventListener('drop', e => {
       const files = e.dataTransfer.files;
       if (!files || !files.length) return;
@@ -140,6 +157,49 @@ document.addEventListener('DOMContentLoaded', () => {
       fileInput.files = dt.files; form.submit();
     });
   });
+
+  // Collapse / Expand jedné sekce
+  document.querySelectorAll('.js-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.js-section');
+      const tiles = card.querySelector('.js-tiles');
+      const open = btn.getAttribute('aria-expanded') !== 'false';
+      tiles.style.display = open ? 'none' : '';
+      btn.textContent = open ? 'Rozbalit' : 'Sbalit';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+  });
+
+  // Globální Collapse/Expand
+  const collapseAll = (open) => {
+    document.querySelectorAll('.js-section').forEach(card => {
+      const btn = card.querySelector('.js-toggle');
+      const tiles = card.querySelector('.js-tiles');
+      tiles.style.display = open ? '' : 'none';
+      btn.textContent = open ? 'Sbalit' : 'Rozbalit';
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  };
+  document.getElementById('btn-collapse')?.addEventListener('click', () => collapseAll(false));
+  document.getElementById('btn-expand')?.addEventListener('click', () => collapseAll(true));
+
+  // Filtrování sekvencí podle textu
+  const q = document.getElementById('seq-search');
+  if (q) q.addEventListener('input', () => {
+    const term = q.value.trim().toLowerCase();
+    document.querySelectorAll('.js-section').forEach(card => {
+      let visible = 0;
+      card.querySelectorAll('.js-seq').forEach(item => {
+        const text = (item.dataset.name || '') + ' ' + (item.querySelector('.tile-desc')?.textContent.toLowerCase() || '');
+        const show = !term || text.includes(term);
+        item.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      // skryj prázdnou sekci při filtru
+      card.style.display = visible ? '' : 'none';
+    });
+  });
 });
 </script>
 {% endblock %}
+

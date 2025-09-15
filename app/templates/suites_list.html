@@ -2,59 +2,67 @@
 {% block title %}{{ project.name }} – Projekt{% endblock %}
 
 {% block content %}
-<section class="hero-report full">
-  <div class="card-glass wide">
+<section class="hero-report full admin-dense project-page">
+  <div class="project-wrap">
 
-    <header class="project-head">
-      <div class="project-meta">
-        {% if project.logo_path %}
-          <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
-        {% else %}
-          <div class="project-logo placeholder">{{ project.name[:1] }}</div>
-        {% endif %}
-        <div>
-          <div class="eyebrow">Projekt</div>
-          <h1 class="project-title">{{ project.name }}</h1>
-          {% if project.description %}
-            <p class="project-sub">{{ project.description }}</p>
+    {# 1) Samostatná karta s názvem projektu #}
+    <header class="card-glass wide project-card" aria-labelledby="project-title">
+      <div class="project-head">
+        <div class="project-meta">
+          {% if project.logo_path %}
+            <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
+          {% else %}
+            <div class="project-logo placeholder">{{ project.name[:1] }}</div>
           {% endif %}
+          <div>
+            <div class="eyebrow">Projekt</div>
+            <h1 id="project-title" class="project-title">{{ project.name }}</h1>
+            {% if project.description %}
+              <p class="project-sub">{{ project.description }}</p>
+            {% endif %}
+          </div>
         </div>
-      </div>
 
-      <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
+        <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
+      </div>
     </header>
 
+    {# 2) Sekce – každá ve vlastní kartě #}
     {% if sections %}
-      {% for s in sections %}
-        <section class="section-card">
-          <h2 class="section-title">{{ s.name }}</h2>
-          {% if s.description %}
-            <p class="section-desc">{{ s.description }}</p>
-          {% endif %}
-
-          {% set seqs = children.get(s.id, []) %}
-          {% if seqs %}
-            <div class="seq-grid">
-              {% for ch in seqs %}
-                <article class="seq-card">
-                  <div>
-                    <div class="seq-title">{{ ch.name }}</div>
-                    {% if ch.description %}
-                      <p class="seq-desc">{{ ch.description }}</p>
-                    {% endif %}
-                  </div>
-                  <a class="btn btn-chip"
-                     href="{{ url_for('bp.runs_list', project_id=project.id, suite_id=ch.id) }}">
-                    Zobrazit reporty
-                  </a>
-                </article>
-              {% endfor %}
+      <div class="sections-grid">
+        {% for s in sections %}
+          <section class="card-surface section-card" aria-labelledby="section-{{ s.id }}-title">
+            <div class="section-head">
+              <h2 id="section-{{ s.id }}-title" class="section-title">{{ s.name }}</h2>
+              {% if s.description %}
+                <p class="section-desc">{{ s.description }}</p>
+              {% endif %}
             </div>
-          {% else %}
-            <div class="card-empty">Žádné sekvence.</div>
-          {% endif %}
-        </section>
-      {% endfor %}
+
+            {% set seqs = children.get(s.id, []) %}
+            {% if seqs %}
+              <div class="seq-grid">
+                {% for ch in seqs %}
+                  <article class="seq-card">
+                    <div>
+                      <div class="seq-title ellip" title="{{ ch.name }}">{{ ch.name }}</div>
+                      {% if ch.description %}
+                        <p class="seq-desc">{{ ch.description }}</p>
+                      {% endif %}
+                    </div>
+                    <a class="btn btn-chip"
+                       href="{{ url_for('bp.runs_list', project_id=project.id, suite_id=ch.id) }}">
+                      Zobrazit reporty
+                    </a>
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="card-empty">Žádné sekvence.</div>
+            {% endif %}
+          </section>
+        {% endfor %}
+      </div>
     {% else %}
       <div class="empty">
         <p class="sub">Zatím žádné sekce.</p>
@@ -63,6 +71,4 @@
 
   </div>
 </section>
-
-
 {% endblock %}
