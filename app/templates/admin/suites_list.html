@@ -5,7 +5,79 @@
 <section class="hero-report full admin-dense admin-suites">
   <div class="card-glass wide">
 
-    {# ===== Projekt – hlavička (samostatná karta) ===== #}
+    {# Lokální styly jen pro tuto stránku #}
+    <style>
+      /* 1) Jedna sekce na řádek (pod sebou), centrované */
+      .admin-suites .board-sections{
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      /* Uděláme z každé sekce širokou kartu (stejně jako na public stránce) */
+      .admin-suites .suite-card.card-glass.wide{
+        width: 100%;
+        margin-inline: auto;
+      }
+
+      /* 2) Uvnitř sekce: dlaždice sekvencí vedle sebe (responsivně) */
+      .admin-suites .tiles{
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); /* širší, líp čitelné */
+        align-items: stretch;
+      }
+
+      /* 3) Vyrovnání výšek a CTA dole — konzistence mezi sloupci */
+      .admin-suites .tile{ display: flex; flex-direction: column; }
+      .admin-suites .tile > .tile-head + .tile-desc{ margin: 0; }
+      .admin-suites .tile .tile-desc{
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; line-height: 1.4; margin: 0;
+        min-height: calc(1.4em * 2);
+      }
+      .admin-suites .tile .tile-head .tile-title{
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; line-height: 1.25;
+        min-height: calc(1.25em * 2);
+      }
+      .admin-suites .tile .quick-upload{ margin-top: auto; }
+      .admin-suites .tile .tile-meta{ margin-top: 8px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+      .admin-suites .tile .tile-actions{ margin-top: 8px; }
+      .admin-suites .tile .btn{ white-space: nowrap; } /* ať se tlačítka nezalamují */
+      .admin-suites .suite-card__head{ margin-bottom: 10px; }
+      .admin-suites .suite-card.card-glass{ border-color: var(--line); }
+
+      /* === KPI „Dnes nahráno“ nahoře === */
+      .kpi-today{
+        border:1px solid color-mix(in oklab, var(--accent-2) 45%, var(--line));
+        background: linear-gradient(180deg, rgba(34,211,238,.10), rgba(34,211,238,.04));
+        border-radius:14px; padding:10px 12px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+        min-width: 160px;
+      }
+      .kpi-today .kpi-label{ color:var(--muted); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+      .kpi-today .kpi-value{ font-weight:900; font-size:24px; }
+
+      /* === Chip „Dnes: X“ u sekvencí === */
+      .chip-today{
+        display:inline-flex; align-items:center; gap:6px;
+        padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px;
+        border:1px solid var(--line); background:rgba(255,255,255,.04);
+      }
+      .chip-today.ok{
+        border-color: color-mix(in oklab, var(--ok) 55%, var(--line));
+        background: color-mix(in oklab, var(--ok) 18%, transparent);
+      }
+      .chip-today.zero{
+        border-color: color-mix(in oklab, var(--skip) 55%, var(--line));
+        background: color-mix(in oklab, var(--skip) 16%, transparent);
+        color: color-mix(in oklab, var(--skip) 88%, white);
+      }
+      .dot{ width:8px; height:8px; border-radius:50%; }
+      .dot.ok{ background:#22c55e; box-shadow:0 0 10px rgba(34,197,94,.55); }
+      .dot.zero{ background:#94a3b8; }
+    </style>
+
+    {# ===== Projekt – hlavička ===== #}
     <header class="project-head admin-head" style="margin-bottom:12px;">
       <div class="project-meta admin-meta">
         {% if project.logo_path %}
@@ -25,10 +97,16 @@
       </div>
     </header>
 
-    {# ===== Toolbar nad sekcemi ===== #}
+    {# ===== Toolbar ===== #}
     <div class="admin-toolbar">
       <div class="search">
         <input id="seq-search" type="search" placeholder="Hledat v sekvencích (název/desc)…" aria-label="Hledat sekvence">
+      </div>
+      <div class="kpis" style="margin:0;">
+        <div class="kpi kpi-today">
+          <div class="kpi-label">Dnes nahráno</div>
+          <div class="kpi-value">{{ today_total or 0 }}</div>
+        </div>
       </div>
       <div class="cta-row">
         <button class="btn btn-ghost btn-sm" type="button" id="btn-collapse">Sbalit vše</button>
@@ -38,11 +116,10 @@
 
     {% if sections and sections|length %}
       <div class="board-sections">
-
-        {# ===== Jednotlivé sekce jako samostatné karty ===== #}
         {% for sec in sections %}
           {% set children = sec.children|sort(attribute='order_index') %}
-          <article class="suite-card js-section" data-section="{{ sec.id }}">
+          {# ŠIROKÁ sekce jako card-glass wide #}
+          <article class="suite-card card-glass wide js-section" data-section="{{ sec.id }}">
             <header class="suite-card__head">
               <div class="suite-hgroup">
                 <span class="suite-chip">SEKCE</span>
@@ -92,9 +169,20 @@
                     </form>
 
                     {% set last = last_by_suite.get(ch.id) %}
+                    {% set today_seq = today_counts_by_suite.get(ch.id, 0) %}
                     <div class="tile-meta">
-                      <span class="badge dim"><span>Naposledy nahráno:</span>
-                        <b>{% if last %}<time datetime="{{ last.strftime('%Y-%m-%dT%H:%M') }}">{{ last.strftime('%Y-%m-%d %H:%M') }}</time>{% else %}—{% endif %}</b>
+                      <span class="badge dim">
+                        <span>Naposledy nahráno:</span>
+                        <b>
+                          {% if last %}
+                            <time datetime="{{ last.strftime('%Y-%m-%dT%H:%M') }}">{{ last.strftime('%Y-%m-%d %H:%M') }}</time>
+                          {% else %}—{% endif %}
+                        </b>
+                      </span>
+
+                      <span class="chip-today {{ 'ok' if today_seq else 'zero' }}">
+                        <span class="dot {{ 'ok' if today_seq else 'zero' }}"></span>
+                        Dnes: {{ today_seq }}
                       </span>
                     </div>
 
@@ -202,4 +290,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
-

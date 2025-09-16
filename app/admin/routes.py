@@ -5,7 +5,6 @@ from app.forms.project_form import ProjectCreateForm
 from werkzeug.security import check_password_hash, safe_join
 from app.models.project_model import Project
 from werkzeug.utils import secure_filename
-from datetime import datetime
 from app.models.run_model import Run
 from app.models.suite_model import Suite
 from app.forms.suite_form import SuiteForm
@@ -13,6 +12,8 @@ from app import db, csrf
 from uuid import uuid4
 import os
 from sqlalchemy import func
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app.utils.csv_report import parse_report_csv
 
@@ -192,7 +193,7 @@ def suites(project_id: int):
                 .order_by(Suite.order_index.asc(), Suite.name.asc())
                 .all())
 
-    # mapování: suite_id -> datetime posledního nahrání (nebo None)
+    # poslední nahrání per suite (beze změny)
     last_by_suite = dict(
         db.session.query(Run.suite_id, func.max(Run.created_at))
         .filter(Run.project_id == project.id)
@@ -200,11 +201,37 @@ def suites(project_id: int):
         .all()
     )
 
-    return render_template("admin/suites_list.html",
-                           project=project,
-                           sections=sections,
-                           last_by_suite=last_by_suite)
+    # --- DNEŠEK: interval 00:00–24:00 v CZ čase ---
+    tz = ZoneInfo("Europe/Prague")
+    now = datetime.now(tz)
+    day_start_local = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end_local   = day_start_local + timedelta(days=1)
 
+    # Pokud máš Run.created_at v UTC (typicky ano), převeď hranice do UTC:
+    day_start = day_start_local.astimezone(ZoneInfo("UTC"))
+    day_end   = day_end_local.astimezone(ZoneInfo("UTC"))
+
+    # Počty dnešních nahrávek po jednotlivých sekvencích (suite_id)
+    rows = (db.session.query(Run.suite_id, func.count(Run.id))
+            .filter(
+                Run.project_id == project.id,
+                Run.created_at >= day_start,
+                Run.created_at <  day_end
+            )
+            .group_by(Run.suite_id)
+            .all())
+
+    today_counts_by_suite = {suite_id: cnt for suite_id, cnt in rows}
+    today_total = sum(today_counts_by_suite.values())
+
+    return render_template(
+        "admin/suites_list.html",
+        project=project,
+        sections=sections,
+        last_by_suite=last_by_suite,
+        today_counts_by_suite=today_counts_by_suite,  # 👈 per-sekvence pro šablonu
+        today_total=today_total                       # 👈 součet (volitelné KPI nahoře)
+    )
 # --- Vytvořit sadu (sekci/sekvenci) ---
 @admin_bp.route("/projects/<int:project_id>/suites/new", methods=["GET", "POST"])
 def suites_new(project_id: int):
