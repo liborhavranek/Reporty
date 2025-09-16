@@ -1209,3 +1209,20 @@ code.mono{ font-size:12.5px; padding:2px 6px; border-radius:8px; border:1px soli
 .admin-suites .tile .tile-desc{ color:var(--muted); }
 
 .admin-suites .badge.dim{ white-space:nowrap; }
+
+
+/* ===== Tree table (sekce + sekvence) ===== */
+.tree-table .group-row { background: rgba(255,255,255,.02); font-weight: 800; }
+.tree-table .group-row:hover { background: rgba(34,211,238,.06); box-shadow: inset 3px 0 0 color-mix(in oklab, var(--accent-2) 40%, transparent); }
+.tree-table .group-toggle{
+  appearance:none; border:1px solid var(--line); background:rgba(255,255,255,.04);
+  color:var(--text); font:inherit; font-weight:900; line-height:1;
+  width:28px; height:28px; border-radius:8px; margin-right:8px; cursor:pointer;
+}
+.tree-table .child-row .child-name{ display:flex; align-items:center; gap:10px; }
+.tree-table .child-row .dot{
+  width:8px; height:8px; border-radius:50%;
+  background: radial-gradient(circle at 40% 40%, #8b5cf6 0%, #06b6d4 90%);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.05) inset;
+}
+.tree-table .empty-note td{ font-style:italic; }

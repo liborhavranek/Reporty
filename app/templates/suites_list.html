@@ -5,7 +5,24 @@
 <section class="hero-report full admin-dense project-page">
   <div class="project-wrap">
 
-    {# 1) Samostatná karta s názvem projektu #}
+    {# Lokální override jen pro tuto stránku #}
+    <style>
+      /* Jediný sloupec sekcí (pod sebou), každá sekce je ŠIROKÁ karta */
+      .sections-grid.one-col { grid-template-columns: 1fr !important; gap:16px !important; }
+
+      /* .card-glass.wide má v admin-dense šířku do 1600px – tady ji používáme pro sekce */
+      .section-card--wide.card-glass.wide { width:100%; margin-inline:auto; }
+
+      /* Uvnitř sekce: sekvence do více sloupců vedle sebe (responsivně) */
+      .seq-grid.cols {
+        display:grid;
+        gap:12px;
+        grid-template-columns: repeat(auto-fill, minmax(340px,1fr));
+        align-items: stretch;
+      }
+    </style>
+
+    {# 1) Hlavní karta projektu #}
     <header class="card-glass wide project-card" aria-labelledby="project-title">
       <div class="project-head">
         <div class="project-meta">
@@ -22,16 +39,15 @@
             {% endif %}
           </div>
         </div>
-
         <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
       </div>
     </header>
 
-    {# 2) Sekce – každá ve vlastní kartě #}
+    {# 2) ŠIROKÉ sekce pod sebou, obsah sekvencí vedle sebe #}
     {% if sections %}
-      <div class="sections-grid">
+      <div class="sections-grid one-col">
         {% for s in sections %}
-          <section class="card-surface section-card" aria-labelledby="section-{{ s.id }}-title">
+          <section class="card-glass wide section-card section-card--wide" aria-labelledby="section-{{ s.id }}-title">
             <div class="section-head">
               <h2 id="section-{{ s.id }}-title" class="section-title">{{ s.name }}</h2>
               {% if s.description %}
@@ -41,7 +57,7 @@
 
             {% set seqs = children.get(s.id, []) %}
             {% if seqs %}
-              <div class="seq-grid">
+              <div class="seq-grid cols">
                 {% for ch in seqs %}
                   <article class="seq-card">
                     <div>
