@@ -1226,3 +1226,33 @@ code.mono{ font-size:12.5px; padding:2px 6px; border-radius:8px; border:1px soli
   box-shadow: 0 0 0 2px rgba(255,255,255,.05) inset;
 }
 .tree-table .empty-note td{ font-style:italic; }
+
+.seq-card{
+    display:grid;
+    grid-template-rows: auto 1fr auto;
+    align-items:start;
+  }
+  /* Titulek: max 2 řádky se stejnou výškou u všech karet */
+  .seq-title{
+    line-height:1.25;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    min-height: calc(1.25em * 2); /* fixní výška pro 2 řádky => zarovnání */
+  }
+  /* Popisek: max 2 řádky, stejné zarovnání */
+  .seq-desc{
+    color:var(--muted);
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    line-height:1.4;
+    min-height: calc(1.4em * 2);
+    margin:0;
+  }
+  /* CTA vždy dole, i když je text kratší/delší */
+  .seq-card .btn-chip{ align-self:start; }
+  /* Pro jistotu stejné chování řádků v gridu (žádné “plavání” poslední dlaždice) */
+  .seq-grid.cols{ grid-auto-rows: 1fr; }
