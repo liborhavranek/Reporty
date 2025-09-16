@@ -5,8 +5,49 @@
 <section class="hero-report full">
   <div class="card-glass wide">
 
+    <style>
+      /* ===== Lokální úpravy pro report (bez filtrů) ===== */
+      .report-header{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+
+      /* KPI grid pod hlavičkou */
+      .kpis{ margin: 12px 0 16px; display:grid; gap:12px; grid-template-columns: repeat(6, minmax(0,1fr)); }
+      @media (max-width: 980px){ .kpis{ grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 560px){ .kpis{ grid-template-columns: 1fr 1fr; } }
+      .kpi-card{
+        border:1px solid var(--line); border-radius:14px;
+        background: color-mix(in oklab, var(--surface) 92%, transparent);
+        padding:12px 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+        display:grid; gap:4px; align-content:start;
+      }
+      .kpi-card .kpi-label{ color:var(--muted); font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+      .kpi-card .kpi-value{ font-weight:900; font-size:20px; letter-spacing:.01em; }
+      .kpi-ok   { border-color: color-mix(in oklab, var(--ok)   45%, var(--line)); }
+      .kpi-fail { border-color: color-mix(in oklab, var(--fail) 45%, var(--line)); }
+      .kpi-skip { border-color: color-mix(in oklab, var(--skip) 45%, var(--line)); }
+
+      /* Přehledové karty */
+      .overview-grid{ margin-bottom: 12px; }
+
+      /* Skupiny */
+      .rg-card details{ border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); }
+      .rg-head{ padding:12px 14px; }
+      .rg-meta .chip{ font-weight:800; }
+
+      /* Tabulka: pevné, bez sticky headerů (fix artefaktu dole) */
+      .table.report thead th{ position: static !important; } /* ← hlavní fix */
+      .table.report{ table-layout: auto; }
+      .table.report th, .table.report td{ vertical-align: middle; }
+      .table.report .cell-test{ width:60%; }
+      .table.report .th-right, .table.report .cell-num{ text-align:right; white-space:nowrap; }
+
+      /* Poznámka: víc řádků */
+      .note-text{ white-space: pre-wrap; }
+
+      .muted{ color: var(--muted); }
+    </style>
+
     <!-- Hlavička -->
-    <div class="header-row">
+    <div class="report-header">
       <div>
         <div class="eyebrow">Report</div>
         <h1 class="title"><span class="accent">{{ report.file_name or rel_path }}</span></h1>
@@ -20,13 +61,23 @@
       </div>
     </div>
 
+    {# KPI (rychlý přehled) #}
+    <div class="kpis">
+      <div class="kpi-card"><div class="kpi-label">Testů celkem</div><div class="kpi-value">{{ report.summary.total }}</div></div>
+      <div class="kpi-card kpi-ok"><div class="kpi-label">✓ Passed</div><div class="kpi-value">{{ report.summary.passed }}</div></div>
+      <div class="kpi-card kpi-fail"><div class="kpi-label">✕ Failed</div><div class="kpi-value">{{ report.summary.failed }}</div></div>
+      <div class="kpi-card kpi-skip"><div class="kpi-label">∘ Skipped</div><div class="kpi-value">{{ report.summary.skipped }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pass rate</div><div class="kpi-value">{{ report.summary.pass_rate }}%</div></div>
+      <div class="kpi-card"><div class="kpi-label">Doba běhu</div><div class="kpi-value">{{ report.summary.duration_fmt }}</div></div>
+    </div>
+
     {# procenta pro souhrnný bar #}
     {% set tot   = report.summary.total or 0 %}
     {% set okp   = ((100.0 * (report.summary.passed  or 0)  / tot)|round(1)) if tot else 0 %}
     {% set failp = ((100.0 * (report.summary.failed  or 0)  / tot)|round(1)) if tot else 0 %}
     {% set skipp = ((100.0 * (report.summary.skipped or 0)  / tot)|round(1)) if tot else 0 %}
 
-    <!-- Přehledové karty -->
+    <!-- Přehledové karty (souhrn + čas + poznámka) -->
     <div class="overview-grid">
       <div class="card-surface">
         <div class="card-head"><h3 class="card-title">Souhrn</h3></div>
@@ -50,80 +101,97 @@
       </div>
 
       <div class="card-surface">
-        <div class="card-head"><h3 class="card-title">Soubor</h3></div>
-        <ul class="mini-list">
-          <li>Název: <b>{{ report.file_name or rel_path.split('/')[-1] }}</b></li>
-          <li>
-            <a class="btn btn-file"
-               href="{{ url_for('bp.storage_reports', filename=rel_path) }}"
-               target="_blank" rel="noopener">
-              <span class="ic">⤓</span> Otevřít CSV
-            </a>
-          </li>
-        </ul>
+        <div class="card-head"><h3 class="card-title">Poznámka</h3></div>
+        {% if report.header_note %}
+          <p class="sublead note-text" style="margin-top:4px;">{{ report.header_note }}</p>
+        {% else %}
+          <p class="sub" style="margin-top:4px;">Žádná poznámka v CSV.</p>
+        {% endif %}
+        <div class="cta-row" style="margin-top:10px;">
+          <a class="btn btn-file"
+             href="{{ url_for('bp.storage_reports', filename=rel_path) }}"
+             target="_blank" rel="noopener">
+            <span class="ic">⤓</span> Otevřít CSV
+          </a>
+        </div>
       </div>
     </div>
 
     {% if report.groups and report.groups|length %}
       <div class="report-groups">
         {% for g in report.groups %}
-  <article class="rg-card">
-    <details>  {# ← odstraněno "open", tedy defaultně zavřené #}
-      <summary class="rg-head">
-        <div class="rg-title">
-          <span class="rg-caret">▸</span>
-          {{ g.describe }}
-        </div>
-        <div class="rg-meta">
-          <span class="chip total mono">{{ g.total }} testů</span>
-          <span class="chip ok">✓ {{ g.passed }}</span>
-          <span class="chip fail">✕ {{ g.failed }}</span>
-          {% if g.skipped %}<span class="chip skip">∘ {{ g.skipped }}</span>{% endif %}
-          <span class="chip dim mono">{{ g.duration_fmt }}</span>
-        </div>
-      </summary>
+          <article class="rg-card">
+            <details>
+              <summary class="rg-head">
+                <div class="rg-title">
+                  <span class="rg-caret">▸</span>
+                  {{ g.describe }}
+                </div>
+                <div class="rg-meta">
+                  <span class="chip total mono">{{ g.total }} testů</span>
+                  <span class="chip ok">✓ {{ g.passed }}</span>
+                  <span class="chip fail">✕ {{ g.failed }}</span>
+                  {% if g.skipped %}<span class="chip skip">∘ {{ g.skipped }}</span>{% endif %}
+                  <span class="chip dim mono">{{ g.duration_fmt }}</span>
+                </div>
+              </summary>
 
-      <div class="table-wrap">
-        <table class="table report">
-          <thead>
-            <tr>
-              <th>Test</th>
-              <th class="th-status">Stav</th>
-              <th class="th-right">Doba</th>
-              <th class="th-right">Čas (lokálně)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for t in g.tests %}
-              <tr>
-                <td class="cell-test">{{ t.test }}</td>
-                <td class="cell-status">
-                  {% if t.status == 'passed' %}
-                    <span class="status ok">PASSED</span>
-                  {% elif t.status == 'failed' %}
-                    <span class="status fail">FAILED</span>
-                  {% elif t.status == 'skipped' %}
-                    <span class="status skip">SKIPPED</span>
-                  {% else %}
-                    <span class="status">{{ t.status|upper }}</span>
-                  {% endif %}
-                </td>
-                <td class="cell-num">{{ t.duration_fmt }}</td>
-                <td class="cell-num">{{ t.timestampLocal or t.timestamp }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  </article>
-{% endfor %}
-
+              <div class="table-wrap">
+                <table class="table report">
+                  <thead>
+                    <tr>
+                      <th>Test</th>
+                      <th class="th-status">Stav</th>
+                      <th class="th-right">Doba</th>
+                      <th class="th-right">Čas (lokálně)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for t in g.tests %}
+                      <tr>
+                        <td class="cell-test">{{ t.test }}</td>
+                        <td class="cell-status">
+                          {% if t.status == 'passed' %}
+                            <span class="status tag ok">PASSED</span>
+                          {% elif t.status == 'failed' %}
+                            <span class="status tag fail">FAILED</span>
+                          {% elif t.status == 'skipped' %}
+                            <span class="status tag skip">SKIPPED</span>
+                          {% else %}
+                            <span class="status tag">{{ t.status|upper }}</span>
+                          {% endif %}
+                        </td>
+                        <td class="cell-num">{{ t.duration_fmt }}</td>
+                        <td class="cell-num">{{ t.timestampLocal or t.timestamp }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </article>
+        {% endfor %}
       </div>
     {% else %}
       <div class="empty"><p class="sub">V CSV nejsou žádné záznamy.</p></div>
     {% endif %}
 
+    <!-- Jednoduché ovládání collapse/expand -->
+    <div class="cta-row" style="margin-top:12px; justify-content:flex-end;">
+      <button class="btn btn-ghost btn-sm" type="button" id="btn-collapse">Sbalit vše</button>
+      <button class="btn btn-ghost btn-sm" type="button" id="btn-expand">Rozbalit vše</button>
+    </div>
+
   </div>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const expandAll = (open) => {
+      document.querySelectorAll('.rg-card details').forEach(d => d.open = open);
+    };
+    document.getElementById('btn-expand')?.addEventListener('click', () => expandAll(true));
+    document.getElementById('btn-collapse')?.addEventListener('click', () => expandAll(false));
+  });
+</script>
 {% endblock %}

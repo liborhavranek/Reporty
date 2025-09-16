@@ -25,21 +25,49 @@ def parse_report_csv(abs_path: str) -> dict:
     Vrátí:
       {
         'file_name': '2025_09_11_14_47.csv',
+        'header_note': 'Text poznámky z hlavičky CSV nebo None',
         'rows': [ {describe, test, status, duration_ms, duration_fmt, timestamp, timestampLocal}, ... ],
-        'groups': [
-           {'describe': '...', 'total': X, 'passed': Y, 'failed': Z, 'skipped': K, 'duration_ms': N, 'tests': [...]},
-        ],
-        'summary': {'total':..., 'passed':..., 'failed':..., 'skipped':..., 'pass_rate':..., 'duration_ms':..., 'duration_fmt':...},
+        'groups': [...],
+        'summary': {...},
       }
     """
     if not os.path.exists(abs_path):
         raise FileNotFoundError(abs_path)
 
-    # Načti, odfiltruj komentáře začínající "#"
+    # Načti soubor a získej hlavičkové komentáře (poznámku)
     with open(abs_path, "rb") as f:
         raw = f.read()
     text = raw.decode("utf-8-sig", errors="replace")
-    lines = [ln for ln in text.splitlines() if not ln.strip().startswith("#")]
+
+    orig_lines = text.splitlines()
+
+    # --- NOVÉ: vyzobnout poznámku z horních komentářů -----------------------
+    header_comment_lines = []
+    data_start_index = 0
+    for idx, ln in enumerate(orig_lines):
+        s = ln.strip()
+        if not s:
+            # prázdné řádky nadále povolíme před komentáři
+            data_start_index = idx + 1
+            continue
+        if s.startswith("#"):
+            # sbíráme komentáře; data ještě nezačala
+            header_comment_lines.append(s.lstrip("#").strip())
+            data_start_index = idx + 1
+            continue
+        # jakmile narazíme na první nekomentovaný neprázdný řádek, končíme
+        data_start_index = idx
+        break
+
+    header_note = None
+    if header_comment_lines:
+        # spojíme více komentářů do jednoho odstavce (zachováme pořadí)
+        header_note = "\n".join([ln for ln in header_comment_lines if ln])
+
+    # --- Původní parsování: vynecháme všechny komentáře (kdekoli v souboru) --
+    # Poznámku už máme z horní části; pro CSV data chceme jen řádky bez komentářů.
+    lines = [ln for ln in orig_lines if not ln.strip().startswith("#")]
+
     rdr = csv.DictReader(io.StringIO("\n".join(lines)))
 
     rows = []
@@ -105,6 +133,7 @@ def parse_report_csv(abs_path: str) -> dict:
 
     return {
         "file_name": os.path.basename(abs_path),
+        "header_note": header_note,   # ← NOVÉ
         "rows": rows,
         "groups": groups,
         "summary": {
