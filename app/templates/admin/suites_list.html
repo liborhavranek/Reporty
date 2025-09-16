@@ -105,7 +105,7 @@
       <div class="kpis" style="margin:0;">
         <div class="kpi kpi-today">
           <div class="kpi-label">Dnes nahráno</div>
-          <div class="kpi-value">{{ today_total or 0 }}</div>
+          <div class="kpi-value">{{ today_total|default(0) }}</div>
         </div>
       </div>
       <div class="cta-row">
@@ -169,7 +169,7 @@
                     </form>
 
                     {% set last = last_by_suite.get(ch.id) %}
-                    {% set today_seq = today_counts_by_suite.get(ch.id, 0) %}
+                    {% set today_seq = (today_counts_by_suite|default({})).get(ch.id, 0) %}
                     <div class="tile-meta">
                       <span class="badge dim">
                         <span>Naposledy nahráno:</span>
