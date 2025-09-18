@@ -101,7 +101,8 @@ def _require_admin():
 # --------- Login / Logout ----------
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
-    if session.get("is_admin"):
+    # pokud už je admin nebo už je user přihlášený → rovnou na projekty
+    if session.get("is_admin") or session.get("user_id"):
         return redirect(url_for("admin.projects"))
 
     if request.method == "POST":
@@ -123,6 +124,7 @@ def login():
         flash("Špatné heslo.", "error")
 
     return render_template("admin/login.html")
+
 
 @admin_bp.get("/logout")
 @csrf.exempt
@@ -461,17 +463,21 @@ def runs_upload(project_id: int, suite_id: int):
     project = Project.query.get_or_404(project_id)
     suite   = Suite.query.filter_by(id=suite_id, project_id=project_id).first_or_404()
 
+    def _back():
+        nxt = request.form.get("next") or request.referrer or url_for("admin.projects")
+        return redirect(nxt, code=303)  # 303 = See Other, nevyvolá znovu POST po F5
+
     f = request.files.get("csv")
     label = (request.form.get("label") or "").strip()
 
     if not f or not f.filename:
         flash("Vyber CSV soubor.", "error")
-        return redirect(url_for("admin.runs_list", project_id=project.id, suite_id=suite.id))
+        return _back()
     if not _allowed_csv(f.filename):
         flash("Povolené jsou jen .csv soubory.", "error")
-        return redirect(url_for("admin.runs_list", project_id=project.id, suite_id=suite.id))
+        return _back()
 
-    ts = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+    ts   = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
     safe = secure_filename(f.filename) or "report.csv"
 
     rel_dir  = f"{project.slug}/{suite.slug}"
@@ -489,7 +495,8 @@ def runs_upload(project_id: int, suite_id: int):
     db.session.commit()
 
     flash("CSV nahráno.", "success")
-    return redirect(url_for("admin.runs_list", project_id=project.id, suite_id=suite.id))
+    return _back()
+
 
 @admin_bp.post("/projects/<int:project_id>/suites/<int:suite_id>/runs/<int:run_id>/delete")
 def runs_delete(project_id: int, suite_id: int, run_id: int):

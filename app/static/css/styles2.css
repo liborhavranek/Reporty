@@ -1110,3 +1110,352 @@ code.mono{ font-size:12.5px; padding:2px 6px; border-radius:8px; border:var(--bd
 .hero-aurora::after{
   content: none !important;
 }
+
+.hero-grid{
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(transparent 95%, rgba(255,255,255,.14) 100%),
+    linear-gradient(90deg, transparent 95%, rgba(255,255,255,.14) 100%);
+  background-size:80px 80px;
+  opacity:.18;
+  mix-blend-mode:screen;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* vyřízni oblast pod kartou */
+.card-glass{
+  position:relative;
+  z-index:1;
+}
+.hero-grid{
+  mask: radial-gradient(circle at 50% 50%, transparent 60px, black 0); /* příklad masky */
+}
+
+
+/* =======================================================================================
+   20) Project page v3 — sidebar + slab sections + row sequences (grid shield)
+   ======================================================================================= */
+
+/* Scéna (bez mřížky) + grid pod obsahem */
+.project-hero{
+  --scene-bg:
+    radial-gradient(1200px 620px at 65% -15%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(1000px 560px at 10% 100%, color-mix(in oklab, var(--accent-2) 18%, transparent), transparent 62%),
+    linear-gradient(180deg, #0a1120 0%, #0d1630 52%, #0b1428 100%);
+  position: relative; isolation: isolate; background: var(--scene-bg);
+}
+.project-hero > .hero-grid{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    linear-gradient(transparent 95%, rgba(255,255,255,.14) 100%),
+    linear-gradient(90deg, transparent 95%, rgba(255,255,255,.14) 100%);
+  background-size: 90px 90px; opacity:.16; mix-blend-mode: screen;
+}
+.project-hero > .board-layout{ position:relative; z-index:1; }
+
+/* Shield: obsah nikdy nepropustí mřížku, ale zůstává glass */
+.project-hero .card-glass.card-shield{
+  position:relative; background:transparent; overflow:hidden;
+}
+.project-hero .card-glass.card-shield::before{
+  content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit;
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.86), rgba(15,23,42,.82)),
+    var(--scene-bg);
+  filter:saturate(1.02) blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* ===== Layout: pevný sidebar + pružný board, bez překryvů ===== */
+.board-layout{
+  display:grid; gap:16px; align-items:start;
+  grid-template-columns: 404px minmax(0,1fr);
+  /* tento minmax a min-width níže eliminují všechny přesahy */
+}
+.board-layout > *{ min-width:0; }
+
+/* Sidebar (žádný přesah, sticky) */
+.side-index{
+  position:sticky; top:calc(var(--topbar-h) + 12px);
+  align-self:start; display:grid; gap:12px; min-width:0; z-index:1;
+}
+.side-card{
+  padding:14px; border:var(--bd); border-radius:16px;
+  background:var(--glass); box-shadow:var(--sh-soft-inset);
+}
+.side-title{
+  margin:0 0 8px; font-weight:900; letter-spacing:.01em;
+  background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 6px 18px rgba(124,58,237,.18);
+}
+.kv-pair{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; }
+.kv-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.kv-value{ font:800 12.5px var(--mono); }
+
+/* Index sekcí */
+.index-list{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.idx-link{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 12px; border-radius:12px; border:var(--bd);
+  background:var(--glass-weak); text-decoration:none;
+  transition: transform var(--t-mid), border-color var(--t-mid), background var(--t-mid), box-shadow var(--t-mid);
+}
+.idx-link:hover{
+  transform:translateY(-1px);
+  border-color:color-mix(in oklab, var(--accent-2) 30%, var(--line));
+  box-shadow:0 10px 24px rgba(0,0,0,.24);
+  background:color-mix(in oklab, var(--surface) 92%, transparent);
+}
+.idx-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.idx-dot{
+  width:10px; height:10px; border-radius:50%;
+  background: radial-gradient(circle at 40% 40%, #8b5cf6 0%, #06b6d4 90%);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.06) inset;
+}
+.idx-name{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.idx-count{
+  display:inline-grid; place-items:center; min-width:36px; padding:4px 8px;
+  border-radius:10px; border:var(--bd);
+  background:rgba(255,255,255,.04); font:800 12px var(--mono); color:var(--muted);
+}
+
+/* ===== Pravý board ===== */
+.board{ display:grid; gap:16px; min-width:0; }
+
+/* Slab: velká přehledná karta sekce */
+.section-slab{
+  padding:18px; border-radius:18px; border:var(--bd);
+  background:var(--glass); box-shadow:var(--sh-soft-inset);
+}
+.slab-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.slab-title{
+  margin:0; font-weight:900; letter-spacing:.005em; font-size:22px;
+  background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 8px 20px rgba(124,58,237,.20);
+}
+.slab-meta{ display:flex; gap:8px; flex-wrap:wrap; }
+.slab-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:12px; font-weight:800; font-size:12px;
+  border:var(--bd); background:rgba(255,255,255,.04); color:var(--text);
+}
+
+/* Seznam sekvencí jako řádky */
+.seq-rows{ margin:6px 0 0; border-top:1px dashed var(--line-weak); }
+.seq-row{
+  display:grid; grid-template-columns: 1fr auto; align-items:center; gap:12px;
+  padding:12px 6px; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.seq-row:last-child{ border-bottom:none; }
+.seq-main{ display:flex; gap:10px; align-items:flex-start; min-width:0; }
+.seq-dot{ width:8px; height:8px; border-radius:50%; margin-top:6px;
+  background: radial-gradient(circle at 40% 40%, #8b5cf6 0%, #06b6d4 90%); box-shadow:0 0 0 2px rgba(255,255,255,.06) inset; }
+.seq-name{ font-weight:800; line-height:1.25; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.seq-desc{ margin:2px 0 0; color:var(--muted); font-size:13.5px; line-height:1.45; }
+
+.seq-actions .btn{ padding:8px 12px; border-radius:10px; }
+
+/* Kotvy a zvýraznění cíle (bez JS) */
+.section-title, .slab-title{ scroll-margin-top: calc(var(--topbar-h) + 16px); }
+.section-slab:target{ outline:2px solid color-mix(in oklab, var(--accent-2) 36%, transparent); outline-offset:2px; }
+
+/* Responsivita */
+@media (max-width:1100px){
+  .board-layout{ grid-template-columns: 1fr; }
+  .side-index{ position:static; }
+}
+
+/* =======================================================================================
+   21) Auth/Login page — aurora scene + grid (around), centered card with shield
+   ======================================================================================= */
+
+.hero-login{
+  /* Scéna bez mřížky, použije ji i shield karty */
+  --scene-bg:
+    radial-gradient(1200px 620px at 65% -15%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(1000px 560px at 10% 100%, color-mix(in oklab, var(--accent-2) 18%, transparent), transparent 62%),
+    linear-gradient(180deg, #0a1120 0%, #0d1630 52%, #0b1428 100%);
+
+  position: relative;
+  isolation: isolate;
+
+  /* plátno + centrování obsahu */
+  min-height: calc(100svh - var(--topbar-h));
+  display: grid;
+  place-items: center;
+  padding: clamp(22px,4vw,42px) var(--pad-x) clamp(44px,7vh,84px);
+
+  background: var(--scene-bg);
+}
+
+/* Mřížka jako samostatná vrstva POD obsahem */
+.hero-login > .hero-grid{
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(transparent 95%, rgba(255,255,255,.14) 100%),
+    linear-gradient(90deg, transparent 95%, rgba(255,255,255,.14) 100%);
+  background-size: 90px 90px;
+  opacity: .16;
+  mix-blend-mode: screen;
+}
+
+/* Obsah nad mřížkou */
+.hero-login > .auth{ position: relative; z-index: 1; }
+
+/* Shield: karta maluje pod sebou scénu (bez gridu) + jemné ztmavení → glass bez prosvitu mřížky */
+.card-glass.auth.card-shield{ background: transparent; overflow: hidden; }
+.card-glass.auth.card-shield::before{
+  content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit;
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.86), rgba(15,23,42,.82)),
+    var(--scene-bg);
+  filter: saturate(1.02) blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* Mírně větší max šířka a vycentrované texty v loginu (volitelné) */
+.card-glass.auth{ width: min(600px, 100%); text-align: left; }
+@media (max-width: 520px){
+  .card-glass.auth{ width: 100%; }
+}
+
+/* === Project header — compact strip ===================================== */
+.project-header{
+  padding:14px 16px;
+  border-radius:14px;
+  border:var(--bd);
+  background:var(--glass);
+  box-shadow:var(--sh-soft-inset);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; flex-wrap:wrap;
+}
+.project-header .hgroup{ display:flex; align-items:center; gap:12px; min-width:0; }
+.project-header .logo{
+  width:44px; height:44px; border-radius:10px; object-fit:cover;
+  border:var(--bd); background:rgba(255,255,255,.04); box-shadow:var(--sh-soft-inset);
+}
+.project-header .logo.placeholder{ display:grid; place-items:center; font-weight:900; color:var(--muted); }
+
+.project-header .title{
+  margin:.1rem 0 2px; font-weight:900; letter-spacing:-.01em;
+  font-size:clamp(24px,3.6vw,32px);
+  background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 6px 18px rgba(124,58,237,.20);
+}
+.project-header .sub{ margin:0; color:var(--muted); font-size:14px; }
+
+.project-header .meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.project-header .chip{ padding:6px 10px; border-radius:12px; border:var(--bd); background:rgba(255,255,255,.04); font-weight:800; font-size:12px; }
+
+/* === Sekce: popis pod názvem ===================================== */
+.slab-head{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  align-items:start;
+}
+.slab-titlebox{ min-width:0; }
+.slab-desc{
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+@media (max-width:720px){
+  .slab-head{ grid-template-columns: 1fr; }
+  .slab-meta{ justify-self:start; }
+}
+
+/* Dropzone – kompaktní varianta pro řádek */
+.dropzone.small{
+  display:inline-flex; align-items:center; gap:10px;
+  width:auto; min-height:0; padding:8px 10px; border-radius:10px;
+  /* zachová se původní dashed border i hover/dragover efekty */
+}
+.dropzone.small .dz-icon{
+  width:22px; height:22px; border-radius:8px;
+  display:grid; place-items:center; font-weight:900;
+}
+.dropzone.small .dz-title{ font-weight:900; font-size:12.5px; line-height:1; }
+.dropzone.small .dz-sub{ display:none; } /* v kompaktní verzi schováme podtitul
+
+/* === Seq row: 2 řádky (info+akce nahoře, upload dole) =================== */
+/* === Seq row: akce nahoře vpravo, upload hned pod nimi ============== */
+.seq-row{
+  display:grid;
+  grid-template-columns: 1fr auto;             /* obsah | akce */
+  grid-template-areas:
+    "main acts"
+    "main upload";                             /* upload sedí hned pod akcemi */
+  align-items:start;
+  gap: 4px 12px;                               /* menší svislá mezera */
+  padding: 12px 8px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.seq-row:last-child{ border-bottom:none; }
+
+.seq-main{   grid-area: main;  display:flex; gap:10px; align-items:flex-start; min-width:0; }
+.seq-actions{grid-area: acts;  display:flex; gap:6px;  align-items:center; justify-content:flex-end; }
+.seq-upload{ grid-area: upload; justify-self:end; margin-top:0; }
+
+/* kompaktní dropzona – menší a úzká */
+.dropzone.compact{
+  display:flex; align-items:center; gap:10px;
+  width: clamp(240px, 32vw, 420px);
+  min-height: 52px; padding:10px 12px; border-radius:12px;
+}
+.dropzone.compact .dz-icon{ width:24px; height:24px; border-radius:8px; }
+.dropzone.compact .dz-title{ font-weight:900; font-size:13px; }
+.dropzone.compact .dz-sub{ color:var(--muted); font-size:12px; }
+
+.quick-upload .qu-file{
+  position:absolute;
+  width:0.1px; height:0.1px;
+  opacity:0; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path: inset(50%);
+  white-space:nowrap; pointer-events:none;
+}
+
+/* ===== Reporty (runs) — kompaktní tabulka ===== */
+.runs-table.compact thead th,
+.runs-table.compact tbody td{
+  padding:10px 12px;               /* menší svislá mezera */
+}
+
+.runs-table.compact .cell-name .file{
+  font-weight:900;
+  font-size:15px;                  /* soubor = hlavní nadpis řádku */
+  letter-spacing:.01em;
+}
+
+.runs-table.compact .cell-name .meta-line{
+  margin-top:2px;
+  font-size:12px;                  /* menší doplněk pod souborem */
+  color:var(--muted);
+}
+
+.runs-table.compact code.mono{ font-size:12px; }
+
+.runs-table.compact .stats{ gap:6px; }
+.runs-table.compact .statsbar{ height:7px; border-radius:999px; }
+.runs-table.compact .statsline{ font-size:12.5px; }
+
+.runs-table.compact .cell-date{ font-size:12.5px; }
+
+.runs-table.compact .actions .btn{
+  padding:6px 8px;                 /* menší akční tlačítka */
+  font-size:12px;
+  border-radius:8px;
+}
+
+/* lepší rozložení sloupců */
+.runs-table.compact{ table-layout: auto; }
+.runs-table.compact thead th:first-child{ width:50%; }  /* Soubor/Běh = půlka řádku */
+.runs-table.compact thead th:nth-child(2){ width:auto; }/* Souhrn roztáhne zbytek */
+.runs-table.compact thead th:nth-child(3){ white-space:nowrap; } /* Datum */
+.runs-table.compact thead th:nth-child(4){ width:1%; white-space:nowrap; } /* Akce */

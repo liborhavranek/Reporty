@@ -2,89 +2,111 @@
 {% block title %}{{ project.name }} – Projekt{% endblock %}
 
 {% block content %}
-<section class="hero-report full admin-dense project-page">
-  <div class="project-wrap">
+<section class="hero-report full admin-dense project-page project-hero">
+  <!-- grid vrstva pod obsahem -->
+  <div class="hero-grid" aria-hidden="true"></div>
 
-    {# Lokální override jen pro tuto stránku #}
-    <style>
-      /* Jediný sloupec sekcí (pod sebou), každá sekce je ŠIROKÁ karta */
-      .sections-grid.one-col { grid-template-columns: 1fr !important; gap:16px !important; }
+  <div class="project-wrap board-layout">
+    <!-- LEVÝ INDEX -->
+    <aside class="side-index">
+      <div class="side-card">
+        <h3 class="side-title">Projekt</h3>
+        <div class="kv-pair"><span class="kv-label">Typ</span><span class="kv-value">{{ project.type.value|upper }}</span></div>
+        {% set v = project.visibility.value %}
+        <div class="kv-pair"><span class="kv-label">Viditelnost</span><span class="kv-value">{{ 'PUBLIC' if v=='public' else ('LINK' if v=='link-only' else 'PRIVATE') }}</span></div>
 
-      /* .card-glass.wide má v admin-dense šířku do 1600px – tady ji používáme pro sekce */
-      .section-card--wide.card-glass.wide { width:100%; margin-inline:auto; }
-
-      /* Uvnitř sekce: sekvence do více sloupců vedle sebe (responsivně) */
-      .seq-grid.cols {
-        display:grid;
-        gap:12px;
-        grid-template-columns: repeat(auto-fill, minmax(340px,1fr));
-        align-items: stretch;
-      }
-    </style>
-
-    {# 1) Hlavní karta projektu #}
-    <header class="card-glass wide project-card" aria-labelledby="project-title">
-      <div class="project-head">
-        <div class="project-meta">
-          {% if project.logo_path %}
-            <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
-          {% else %}
-            <div class="project-logo placeholder">{{ project.name[:1] }}</div>
-          {% endif %}
-          <div>
-            <div class="eyebrow">Projekt</div>
-            <h1 id="project-title" class="project-title">{{ project.name }}</h1>
-            {% if project.description %}
-              <p class="project-sub">{{ project.description }}</p>
-            {% endif %}
-          </div>
-        </div>
-        <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
+        {% set ns = namespace(total=0) %}
+        {% for s in sections %}{% set ns.total = ns.total + (children.get(s.id, []) | length) %}{% endfor %}
+        <div class="kv-pair"><span class="kv-label">Sekce</span><span class="kv-value">{{ sections|length }}</span></div>
+        <div class="kv-pair"><span class="kv-label">Sekvence</span><span class="kv-value">{{ ns.total }}</span></div>
       </div>
-    </header>
 
-    {# 2) ŠIROKÉ sekce pod sebou, obsah sekvencí vedle sebe #}
-    {% if sections %}
-      <div class="sections-grid one-col">
+      {% if sections %}
+      <div class="side-card">
+        <h3 class="side-title">Sekce</h3>
+        <ul class="index-list">
+          {% for s in sections %}
+            {% set cnt = (children.get(s.id, []) | length) %}
+            <li>
+              <a class="idx-link" href="#sec-{{ s.id }}">
+                <span class="idx-left">
+                  <span class="idx-dot"></span>
+                  <span class="idx-name">{{ s.name }}</span>
+                </span>
+                <span class="idx-count">{{ "%02d"|format(cnt) }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </aside>
+
+    <!-- PRAVÝ BOARD -->
+    <div class="board">
+      <!-- Header karta projektu (glass shield) -->
+<header class="project-header card-shield" aria-labelledby="project-title">
+  <div class="hgroup">
+    {% if project.logo_path %}
+      <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="logo">
+    {% else %}
+      <div class="logo placeholder">{{ project.name[:1] }}</div>
+    {% endif %}
+    <div>
+      <div class="eyebrow">Projekt</div>
+      <h1 id="project-title" class="title">{{ project.name }}</h1>
+      {% if project.description %}<p class="sub">{{ project.description }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="meta">
+    <span class="chip">Sekce: <b class="mono">{{ sections|length }}</b></span>
+    <span class="chip">Sekvence: <b class="mono">{{ ns.total }}</b></span>
+    <a class="btn btn-ghost" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
+  </div>
+</header>
+
+      {% if sections %}
         {% for s in sections %}
-          <section class="card-glass wide section-card section-card--wide" aria-labelledby="section-{{ s.id }}-title">
-            <div class="section-head">
-              <h2 id="section-{{ s.id }}-title" class="section-title">{{ s.name }}</h2>
-              {% if s.description %}
-                <p class="section-desc">{{ s.description }}</p>
-              {% endif %}
-            </div>
+          {% set seqs = children.get(s.id, []) %}
+          <!-- SLAB sekce -->
+          <section id="sec-{{ s.id }}" class="section-slab card-shield">
+<div class="slab-head">
+  <div class="slab-titlebox">
+    <h2 class="slab-title">{{ s.name }}</h2>
+    {% if s.description %}<p class="slab-desc">{{ s.description }}</p>{% endif %}
+  </div>
+  <div class="slab-meta">
+    <span class="slab-chip">Sekvence: <span class="v">{{ seqs|length }}</span></span>
+  </div>
+</div>
 
-            {% set seqs = children.get(s.id, []) %}
             {% if seqs %}
-              <div class="seq-grid cols">
+              <div class="seq-rows">
                 {% for ch in seqs %}
-                  <article class="seq-card">
-                    <div>
-                      <div class="seq-title ellip" title="{{ ch.name }}">{{ ch.name }}</div>
-                      {% if ch.description %}
-                        <p class="seq-desc">{{ ch.description }}</p>
-                      {% endif %}
+                  <div class="seq-row">
+                    <div class="seq-main">
+                      <span class="seq-dot"></span>
+                      <div>
+                        <div class="seq-name ellip" title="{{ ch.name }}">{{ ch.name }}</div>
+                        {% if ch.description %}<div class="seq-desc">{{ ch.description }}</div>{% endif %}
+                      </div>
                     </div>
-                    <a class="btn btn-chip"
-                       href="{{ url_for('bp.runs_list', project_id=project.id, suite_id=ch.id) }}">
-                      Zobrazit reporty
-                    </a>
-                  </article>
+                    <div class="seq-actions">
+                      <a class="btn btn-ghost btn-sm" href="{{ url_for('bp.runs_list', project_id=project.id, suite_id=ch.id) }}">Zobrazit</a>
+                    </div>
+                  </div>
                 {% endfor %}
               </div>
             {% else %}
-              <div class="card-empty">Žádné sekvence.</div>
+              <p class="sub">Žádné sekvence.</p>
             {% endif %}
           </section>
         {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty">
-        <p class="sub">Zatím žádné sekce.</p>
-      </div>
-    {% endif %}
-
+      {% else %}
+        <div class="empty"><p class="sub">Zatím žádné sekce.</p></div>
+      {% endif %}
+    </div>
   </div>
 </section>
 {% endblock %}

@@ -2,8 +2,11 @@
 {% block title %}Přístup k projektu – {{ project.name }}{% endblock %}
 
 {% block content %}
-<section class="hero-report full">
-  <div class="card-glass access">
+<section class="hero-report full hero-login">
+  <!-- mřížka pod obsahem -->
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="card-glass auth card-shield">
     <div class="header-row">
       <div>
         <div class="eyebrow">Zabezpečený projekt</div>

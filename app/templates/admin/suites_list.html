@@ -2,268 +2,232 @@
 {% block title %}Sady – {{ project.name }}{% endblock %}
 
 {% block content %}
-<section class="hero-report full admin-dense admin-suites">
-  <div class="card-glass wide">
+<section class="hero-report full admin-dense project-page project-hero">
+  <!-- grid vrstva pod obsahem -->
+  <div class="hero-grid" aria-hidden="true"></div>
 
-    {# Lokální styly jen pro tuto stránku #}
-    <style>
-      /* 1) Jedna sekce na řádek (pod sebou), centrované */
-      .admin-suites .board-sections{
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-      }
-      /* Uděláme z každé sekce širokou kartu (stejně jako na public stránce) */
-      .admin-suites .suite-card.card-glass.wide{
-        width: 100%;
-        margin-inline: auto;
-      }
+  <div class="project-wrap board-layout">
+    {# ===== LEFT: sticky index ===== #}
+    <aside class="side-index">
+      <div class="side-card">
+        <h3 class="side-title">Projekt</h3>
+        {% set v = project.visibility.value %}
+        {% set ns = namespace(total=0) %}
+        {% for s in sections %}{% set ns.total = ns.total + (s.children|length) %}{% endfor %}
+        <div class="kv-pair"><span class="kv-label">Název</span><span class="kv-value ellip">{{ project.name }}</span></div>
+        <div class="kv-pair"><span class="kv-label">Viditelnost</span><span class="kv-value">{{ 'PUBLIC' if v=='public' else ('LINK' if v=='link-only' else 'PRIVATE') }}</span></div>
+        <div class="kv-pair"><span class="kv-label">Sekce</span><span class="kv-value">{{ sections|length }}</span></div>
+        <div class="kv-pair"><span class="kv-label">Sekvence</span><span class="kv-value">{{ ns.total }}</span></div>
+      </div>
 
-      /* 2) Uvnitř sekce: dlaždice sekvencí vedle sebe (responsivně) */
-      .admin-suites .tiles{
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); /* širší, líp čitelné */
-        align-items: stretch;
-      }
+      {% if sections %}
+      <div class="side-card">
+        <h3 class="side-title">Sekce</h3>
+        <ul class="index-list">
+          {% for sec in sections %}
+            <li>
+              <a class="idx-link" href="#sec-{{ sec.id }}">
+                <span class="idx-left">
+                  <span class="idx-dot"></span>
+                  <span class="idx-name">{{ sec.name }}</span>
+                </span>
+                <span class="idx-count">{{ "%02d"|format(sec.children|length) }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
-      /* 3) Vyrovnání výšek a CTA dole — konzistence mezi sloupci */
-      .admin-suites .tile{ display: flex; flex-direction: column; }
-      .admin-suites .tile > .tile-head + .tile-desc{ margin: 0; }
-      .admin-suites .tile .tile-desc{
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-        overflow: hidden; line-height: 1.4; margin: 0;
-        min-height: calc(1.4em * 2);
-      }
-      .admin-suites .tile .tile-head .tile-title{
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-        overflow: hidden; line-height: 1.25;
-        min-height: calc(1.25em * 2);
-      }
-      .admin-suites .tile .quick-upload{ margin-top: auto; }
-      .admin-suites .tile .tile-meta{ margin-top: 8px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-      .admin-suites .tile .tile-actions{ margin-top: 8px; }
-      .admin-suites .tile .btn{ white-space: nowrap; } /* ať se tlačítka nezalamují */
-      .admin-suites .suite-card__head{ margin-bottom: 10px; }
-      .admin-suites .suite-card.card-glass{ border-color: var(--line); }
+      <div class="side-card">
+        <a class="btn btn-primary w-full" href="{{ url_for('admin.suites_new', project_id=project.id) }}">+ Nová sekce</a>
+      </div>
+    </aside>
 
-      /* === KPI „Dnes nahráno“ nahoře === */
-      .kpi-today{
-        border:1px solid color-mix(in oklab, var(--accent-2) 45%, var(--line));
-        background: linear-gradient(180deg, rgba(34,211,238,.10), rgba(34,211,238,.04));
-        border-radius:14px; padding:10px 12px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-        min-width: 160px;
-      }
-      .kpi-today .kpi-label{ color:var(--muted); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
-      .kpi-today .kpi-value{ font-weight:900; font-size:24px; }
+    {# ===== RIGHT: board ===== #}
+    <div class="board">
+      {# Kompaktní projekt header (strip) #}
+      <header class="project-header card-shield" aria-labelledby="project-title">
+        <div class="hgroup">
+          {% if project.logo_path %}
+            <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="logo">
+          {% else %}
+            <div class="logo placeholder">{{ project.name[:1] }}</div>
+          {% endif %}
+          <div>
+            <div class="eyebrow">Admin · Projekt</div>
+            <h1 id="project-title" class="title">{{ project.name }} <span class="muted">— Sady</span></h1>
+            {% if project.description %}<p class="sub clamp-2">{{ project.description }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="meta">
+          <span class="chip">Sekce: <b class="mono">{{ sections|length }}</b></span>
+          <span class="chip">Sekvence: <b class="mono">{{ ns.total }}</b></span>
+          <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">← Zpět na projekty</a>
+        </div>
+      </header>
 
-      /* === Chip „Dnes: X“ u sekvencí === */
-      .chip-today{
-        display:inline-flex; align-items:center; gap:6px;
-        padding:6px 10px; border-radius:999px; font-weight:800; font-size:12px;
-        border:1px solid var(--line); background:rgba(255,255,255,.04);
-      }
-      .chip-today.ok{
-        border-color: color-mix(in oklab, var(--ok) 55%, var(--line));
-        background: color-mix(in oklab, var(--ok) 18%, transparent);
-      }
-      .chip-today.zero{
-        border-color: color-mix(in oklab, var(--skip) 55%, var(--line));
-        background: color-mix(in oklab, var(--skip) 16%, transparent);
-        color: color-mix(in oklab, var(--skip) 88%, white);
-      }
-      .dot{ width:8px; height:8px; border-radius:50%; }
-      .dot.ok{ background:#22c55e; box-shadow:0 0 10px rgba(34,197,94,.55); }
-      .dot.zero{ background:#94a3b8; }
-    </style>
-
-    {# ===== Projekt – hlavička ===== #}
-    <header class="project-head admin-head" style="margin-bottom:12px;">
-      <div class="project-meta admin-meta">
-        {% if project.logo_path %}
-          <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
-        {% else %}
-          <div class="project-logo placeholder">{{ project.name[:1] }}</div>
-        {% endif %}
-        <div class="meta-text">
-          <div class="eyebrow">Admin · Projekt</div>
-          <h1 class="project-title">{{ project.name }} <span class="muted">— Sady</span></h1>
-          {% if project.description %}<p class="project-sub clamp-2">{{ project.description }}</p>{% endif %}
+      {# Toolbar panel #}
+      <div class="admin-toolbar panel">
+        <div class="search">
+          <input id="seq-search" type="search" placeholder="Hledat v sekvencích (název/desc)…" aria-label="Hledat sekvence">
+        </div>
+        <div class="kpis" style="margin:0;">
+          <div class="kpi kpi-today">
+            <div class="kpi-label">Dnes nahráno</div>
+            <div class="kpi-value">{{ today_total|default(0) }}</div>
+          </div>
+        </div>
+        <div class="cta-row">
+          <button class="btn btn-ghost btn-sm" type="button" id="btn-collapse">Sbalit vše</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="btn-expand">Rozbalit vše</button>
         </div>
       </div>
-      <div class="cta-row admin-head__actions">
-        <a class="btn btn-primary" href="{{ url_for('admin.suites_new', project_id=project.id) }}">+ Nová sekce</a>
-        <a class="btn btn-ghost" href="{{ url_for('admin.projects') }}">← Zpět na projekty</a>
-      </div>
-    </header>
 
-    {# ===== Toolbar ===== #}
-    <div class="admin-toolbar">
-      <div class="search">
-        <input id="seq-search" type="search" placeholder="Hledat v sekvencích (název/desc)…" aria-label="Hledat sekvence">
-      </div>
-      <div class="kpis" style="margin:0;">
-        <div class="kpi kpi-today">
-          <div class="kpi-label">Dnes nahráno</div>
-          <div class="kpi-value">{{ today_total|default(0) }}</div>
-        </div>
-      </div>
-      <div class="cta-row">
-        <button class="btn btn-ghost btn-sm" type="button" id="btn-collapse">Sbalit vše</button>
-        <button class="btn btn-ghost btn-sm" type="button" id="btn-expand">Rozbalit vše</button>
-      </div>
-    </div>
-
-    {% if sections and sections|length %}
-      <div class="board-sections">
+      {% if sections and sections|length %}
         {% for sec in sections %}
-          {% set children = sec.children|sort(attribute='order_index') %}
-          {# ŠIROKÁ sekce jako card-glass wide #}
-          <article class="suite-card card-glass wide js-section" data-section="{{ sec.id }}">
-            <header class="suite-card__head">
-              <div class="suite-hgroup">
-                <span class="suite-chip">SEKCE</span>
-                <h3 class="suite-title ellip" title="{{ sec.name }}">{{ sec.name }}</h3>
-                {% if sec.description %}<div class="suite-desc muted clamp-2">{{ sec.description }}</div>{% endif %}
-              </div>
+          {% set seqs = sec.children|sort(attribute='order_index') %}
 
-              <div class="suite-actions">
-                <span class="badge dim" title="Počet sekvencí">{{ children|length }}&nbsp;sekvencí</span>
-                <a class="btn btn-primary btn-sm"
-                   href="{{ url_for('admin.suites_new', project_id=project.id, parent_id=sec.id) }}">+ Nová sekvence</a>
-                <a class="btn btn-ghost btn-sm"
-                   href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=sec.id) }}">Upravit</a>
+          <section id="sec-{{ sec.id }}" class="section-slab card-shield js-section">
+            <div class="slab-head">
+              <div class="slab-titlebox">
+                <h2 class="slab-title">{{ sec.name }}</h2>
+                {% if sec.description %}<p class="slab-desc">{{ sec.description }}</p>{% endif %}
+              </div>
+              <div class="slab-meta">
+                <span class="slab-chip">Sekvence: <span class="v">{{ seqs|length }}</span></span>
+                <a class="btn btn-primary btn-sm" href="{{ url_for('admin.suites_new', project_id=project.id, parent_id=sec.id) }}">+ Nová sekvence</a>
+                <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=sec.id) }}">Upravit sekci</a>
                 <form method="post"
                       action="{{ url_for('admin.suites_delete', project_id=project.id, suite_id=sec.id) }}"
                       onsubmit="return confirm('Smazat sekci {{ sec.name }} vč. jejích sekvencí?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
+                  <button class="btn btn-danger btn-sm" type="submit">Smazat sekci</button>
                 </form>
                 <button class="btn btn-ghost btn-sm js-toggle" type="button" aria-expanded="true">Sbalit</button>
               </div>
-            </header>
+            </div>
 
-            {% if children and children|length %}
-              <div class="tiles js-tiles">
-                {% for ch in children %}
-                  <article class="tile js-seq" data-suite="{{ ch.id }}" data-name="{{ ch.name|lower }}">
-                    <div class="tile-head">
-                      <span class="suite-chip thin">SEKVENCE</span>
-                      <div class="tile-title ellip" title="{{ ch.name }}">{{ ch.name }}</div>
-                    </div>
+            {% if seqs %}
+              <div class="seq-rows js-tiles">
+                {% for ch in seqs %}
+                  {% set last = last_by_suite.get(ch.id) %}
+                  {% set today_seq = (today_counts_by_suite|default({})).get(ch.id, 0) %}
 
-                    {% if ch.description %}<p class="tile-desc clamp-2">{{ ch.description }}</p>{% endif %}
+                 <div class="seq-row js-seq" data-suite="{{ ch.id }}" data-name="{{ ch.name|lower }}">
+  <!-- LEVÁ část: název + popis + mini meta -->
+  <div class="seq-main">
+    <span class="seq-dot"></span>
+    <div>
+      <div class="seq-name ellip" title="{{ ch.name }}">{{ ch.name }}</div>
+      {% if ch.description %}<div class="seq-desc">{{ ch.description }}</div>{% endif %}
+      {% set last = last_by_suite.get(ch.id) %}
+      {% set today_seq = (today_counts_by_suite|default({})).get(ch.id, 0) %}
+      <div class="meta-mini" style="margin-top:6px;">
+        <span class="badge dim">Naposledy:
+          <b>{% if last %}<time datetime="{{ last.strftime('%Y-%m-%dT%H:%M') }}">{{ last.strftime('%Y-%m-%d %H:%M') }}</time>{% else %}—{% endif %}</b>
+        </span>
+        <span class="chip-today {{ 'ok' if today_seq else 'zero' }}">
+          <span class="dot {{ 'ok' if today_seq else 'zero' }}"></span>
+          Dnes: {{ today_seq }}
+        </span>
+      </div>
+    </div>
+  </div>
 
-                    <form class="quick-upload"
-                          method="post"
-                          enctype="multipart/form-data"
-                          action="{{ url_for('admin.runs_upload', project_id=project.id, suite_id=ch.id) }}">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input class="qu-file" type="file" name="csv" accept=".csv,text/csv" hidden>
-                      <div class="dropzone" tabindex="0"
-                           onclick="this.closest('form').querySelector('.qu-file').click()">
-                        <div class="dz-icon">⬆︎</div>
-                        <div class="dz-title">Přetáhni CSV sem</div>
-                        <div class="dz-sub">…nebo klikni pro výběr</div>
-                      </div>
-                    </form>
+  <!-- PRAVÁ část: malá akční tlačítka -->
+  <div class="seq-actions">
+    <a class="btn btn-primary btn-xs"
+       href="{{ url_for('admin.runs_list', project_id=project.id, suite_id=ch.id) }}">Běhy / CSV</a>
+    <a class="btn btn-ghost btn-xs"
+       href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=ch.id) }}">Upravit</a>
+    <form method="post"
+          action="{{ url_for('admin.suites_delete', project_id=project.id, suite_id=ch.id) }}"
+          onsubmit="return confirm('Smazat sekvenci {{ ch.name }}?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-danger btn-xs" type="submit">Smazat</button>
+    </form>
+  </div>
 
-                    {% set last = last_by_suite.get(ch.id) %}
-                    {% set today_seq = (today_counts_by_suite|default({})).get(ch.id, 0) %}
-                    <div class="tile-meta">
-                      <span class="badge dim">
-                        <span>Naposledy nahráno:</span>
-                        <b>
-                          {% if last %}
-                            <time datetime="{{ last.strftime('%Y-%m-%dT%H:%M') }}">{{ last.strftime('%Y-%m-%d %H:%M') }}</time>
-                          {% else %}—{% endif %}
-                        </b>
-                      </span>
+  <!-- SPODNÍ řádek: širší nahrávací pole -->
+<div class="seq-upload">
+<form class="quick-upload"
+      method="post"
+      enctype="multipart/form-data"
+      action="{{ url_for('admin.runs_upload', project_id=project.id, suite_id=ch.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <!-- vrať se po nahrání zpět na tuto stránku na řádek sekvence -->
+  <input type="hidden" name="next" value="{{ request.path }}#seq-{{ ch.id }}">
+    <input class="qu-file" id="csv-{{ ch.id }}" type="file" name="csv" accept=".csv,text/csv">
+    <label class="dropzone compact" for="csv-{{ ch.id }}" tabindex="0">
+      <div class="dz-icon">⬆︎</div>
+      <div class="dz-title">Přetáhni CSV sem</div>
+      <div class="dz-sub">…nebo klikni pro výběr</div>
+    </label>
+  </form>
+</div>
 
-                      <span class="chip-today {{ 'ok' if today_seq else 'zero' }}">
-                        <span class="dot {{ 'ok' if today_seq else 'zero' }}"></span>
-                        Dnes: {{ today_seq }}
-                      </span>
-                    </div>
+</div>
 
-                    <div class="tile-actions">
-                      <a class="btn btn-primary btn-sm"
-                         href="{{ url_for('admin.runs_list', project_id=project.id, suite_id=ch.id) }}">Běhy / CSV</a>
-                      <a class="btn btn-ghost btn-sm"
-                         href="{{ url_for('admin.suites_edit', project_id=project.id, suite_id=ch.id) }}">Upravit</a>
-                      <form method="post"
-                            action="{{ url_for('admin.suites_delete', project_id=project.id, suite_id=ch.id) }}"
-                            onsubmit="return confirm('Smazat sekvenci {{ ch.name }}?');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
-                      </form>
-                    </div>
-                  </article>
                 {% endfor %}
               </div>
             {% else %}
-              <div class="empty"><p class="sub">Tato sekce nemá žádné sekvence.</p></div>
+              <p class="sub">Tato sekce nemá žádné sekvence.</p>
             {% endif %}
-          </article>
+          </section>
         {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty">
-        <p class="sub">Zatím žádné sekce.</p>
-        <a class="btn btn-primary" href="{{ url_for('admin.suites_new', project_id=project.id) }}">Přidat první sekci</a>
-      </div>
-    {% endif %}
+      {% else %}
+        <div class="empty">
+          <p class="sub">Zatím žádné sekce.</p>
+          <a class="btn btn-primary" href="{{ url_for('admin.suites_new', project_id=project.id) }}">Přidat první sekci</a>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </section>
 
-{# ===== Interakce (vyhledávání, collapse/expand, drag&drop) ===== #}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Quick-upload: auto-submit
-  document.querySelectorAll('.quick-upload .qu-file').forEach(input => {
-    input.addEventListener('change', () => {
-      if (input.files && input.files.length > 0) input.closest('form').submit();
+  // kompaktní upload
+  document.querySelectorAll('.upload-mini').forEach(form => {
+    const btn = form.querySelector('.js-upload');
+    const input = form.querySelector('.qu-file');
+    btn?.addEventListener('click', () => input?.click());
+    input?.addEventListener('change', () => { if (input.files?.length) form.submit(); });
+  });
+
+  // řádkový drag&drop zvýraznění
+  document.querySelectorAll('.seq-row').forEach(row => {
+    row.addEventListener('dragenter', e => { e.preventDefault(); row.classList.add('is-dragover'); });
+    row.addEventListener('dragover',  e => { e.preventDefault(); });
+    ['dragleave','drop'].forEach(evt => row.addEventListener(evt, e => { e.preventDefault(); row.classList.remove('is-dragover'); }));
+    row.addEventListener('drop', e => {
+      const f = e.dataTransfer?.files?.[0]; if (!f) return;
+      if (!f.name.toLowerCase().endsWith('.csv')) { alert('Povoleny jsou pouze .csv soubory.'); return; }
+      const form = row.querySelector('.upload-mini'); const input = form?.querySelector('.qu-file');
+      if (!form || !input) return;
+      const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files; form.submit();
     });
   });
 
-  // Drag & drop CSV
-  document.querySelectorAll('.quick-upload .dropzone').forEach(zone => {
-    const form = zone.closest('form');
-    const fileInput = form.querySelector('.qu-file');
-    ['dragenter','dragover'].forEach(evt =>
-      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('is-dragover'); })
-    );
-    ['dragleave','drop'].forEach(evt =>
-      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('is-dragover'); })
-    );
-    zone.addEventListener('drop', e => {
-      const files = e.dataTransfer.files;
-      if (!files || !files.length) return;
-      const file = files[0];
-      if (!file.name.toLowerCase().endsWith('.csv')) { alert('Povoleny jsou pouze .csv soubory.'); return; }
-      const dt = new DataTransfer(); dt.items.add(file);
-      fileInput.files = dt.files; form.submit();
-    });
-  });
-
-  // Collapse / Expand jedné sekce
+  // collapse/expand jedné sekce
   document.querySelectorAll('.js-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const card = btn.closest('.js-section');
-      const tiles = card.querySelector('.js-tiles');
+      const rows = card.querySelector('.js-tiles');
       const open = btn.getAttribute('aria-expanded') !== 'false';
-      tiles.style.display = open ? 'none' : '';
+      rows.style.display = open ? 'none' : '';
       btn.textContent = open ? 'Rozbalit' : 'Sbalit';
       btn.setAttribute('aria-expanded', open ? 'false' : 'true');
     });
   });
 
-  // Globální Collapse/Expand
+  // globální collapse/expand
   const collapseAll = (open) => {
     document.querySelectorAll('.js-section').forEach(card => {
       const btn = card.querySelector('.js-toggle');
-      const tiles = card.querySelector('.js-tiles');
-      tiles.style.display = open ? '' : 'none';
+      const rows = card.querySelector('.js-tiles');
+      rows.style.display = open ? '' : 'none';
       btn.textContent = open ? 'Sbalit' : 'Rozbalit';
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
@@ -271,22 +235,58 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-collapse')?.addEventListener('click', () => collapseAll(false));
   document.getElementById('btn-expand')?.addEventListener('click', () => collapseAll(true));
 
-  // Filtrování sekvencí podle textu
+  // filtrování sekvencí (název + popis)
   const q = document.getElementById('seq-search');
-  if (q) q.addEventListener('input', () => {
+  q?.addEventListener('input', () => {
     const term = q.value.trim().toLowerCase();
     document.querySelectorAll('.js-section').forEach(card => {
       let visible = 0;
       card.querySelectorAll('.js-seq').forEach(item => {
-        const text = (item.dataset.name || '') + ' ' + (item.querySelector('.tile-desc')?.textContent.toLowerCase() || '');
+        const text = (item.dataset.name || '') + ' ' + (item.querySelector('.seq-desc')?.textContent.toLowerCase() || '');
         const show = !term || text.includes(term);
         item.style.display = show ? '' : 'none';
         if (show) visible++;
       });
-      // skryj prázdnou sekci při filtru
       card.style.display = visible ? '' : 'none';
     });
   });
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // 1) Auto-submit po výběru
+  document.querySelectorAll('.quick-upload .qu-file').forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length) {
+        input.closest('form').submit();
+      }
+    });
+  });
+
+  // 2) Drag & drop na .dropzone (funguje i bez DataTransfer konstruktoru)
+  document.querySelectorAll('.quick-upload .dropzone').forEach(zone => {
+    const form = zone.closest('form');
+    const fileInput = form.querySelector('.qu-file');
+
+    ['dragenter','dragover'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('is-dragover'); })
+    );
+    ['dragleave','drop'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('is-dragover'); })
+    );
+
+    zone.addEventListener('drop', e => {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+      const f = files[0];
+      if (!f.name.toLowerCase().endsWith('.csv')) { alert('Povoleny jsou pouze .csv soubory.'); return; }
+      // Safari-friendly: při dropu lze přiřadit přímo
+      try { fileInput.files = files; } catch(_) {}
+      form.submit();
+    });
+  });
+});
+</script>
+
+
 {% endblock %}

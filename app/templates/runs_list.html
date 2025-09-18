@@ -2,8 +2,9 @@
 {% block title %}Reporty – {{ suite.name }} · {{ project.name }}{% endblock %}
 
 {% block content %}
-<section class="hero-report full">
-  <div class="card-glass wide runs-page">
+<section class="section-hero hero-aurora">
+  <div class="hero-grid"></div>
+    <div class="card-glass wide">
 
     <!-- hlavička -->
     <div class="header-row">
@@ -24,68 +25,67 @@
         <input id="runs-q" type="search" placeholder="Hledat podle názvu běhu nebo souboru…" aria-label="Hledat běh">
       </div>
 
-      <div class="table-wrap">
-        <table class="table nice runs-table">
-<thead>
-  <tr>
-    <th style="width:42%">Název běhu / soubor</th>
-    <th>Souhrn</th>
-    <th style="white-space:nowrap">Vytvořeno</th>
-    <th class="col-actions">Akce</th>
-  </tr>
-</thead>
-          <tbody id="runs-body">
-  {% for r in runs %}
-    {% set filename = r.csv_path.rsplit('/', 1)[-1] %}
-    {% set t = (r.stats.total or 0) if r.stats else 0 %}
-    {% set okp   = ((100.0 * r.stats.passed  / t)|round(1))  if t else 0 %}
-    {% set failp = ((100.0 * r.stats.failed  / t)|round(1))  if t else 0 %}
-    {% set skipp = ((100.0 * r.stats.skipped / t)|round(1))  if t else 0 %}
+<div class="table-wrap">
+  <table class="table nice runs-table compact">
+    <thead>
+      <tr>
+        <th>Soubor / běh</th>
+        <th>Souhrn</th>
+        <th>Vytvořeno</th>
+        <th class="col-actions">Akce</th>
+      </tr>
+    </thead>
+    <tbody id="runs-body">
+      {% for r in runs %}
+        {% set filename = r.csv_path.rsplit('/', 1)[-1] %}
+        {% set t = (r.stats.total or 0) if r.stats else 0 %}
+        {% set okp   = ((100.0 * r.stats.passed  / t)|round(1))  if t else 0 %}
+        {% set failp = ((100.0 * r.stats.failed  / t)|round(1))  if t else 0 %}
+        {% set skipp = ((100.0 * r.stats.skipped / t)|round(1))  if t else 0 %}
 
-    <tr class="run-row" data-search="{{ (r.label or 'beh') | lower }} {{ filename | lower }}">
-      <td class="cell-name">
-        <div class="name ellip">{{ r.label or "Běh" }}</div>
-        <div class="meta-line">
-          <code class="mono ellip">{{ filename }}</code>
-        </div>
-      </td>
-
-      <td class="cell-stats">
-        {% if r.stats %}
-          <div class="stats">
-            <!-- kompaktní stacked bar; šířky z procent -->
-            <div class="statsbar"
-                 style="--okp: {{ okp }}; --failp: {{ failp }}; --skipp: {{ skipp }};"></div>
-            <div class="statsline">
-              <span class="muted">{{ r.stats.total }} testů</span>
-              <span class="ok">✓ {{ r.stats.passed }}</span>
-              <span class="fail">✕ {{ r.stats.failed }}</span>
-              <span class="skip">∘ {{ r.stats.skipped }}</span>
-              <span class="dur mono">{{ r.stats.duration_fmt }}</span>
+        <tr class="run-row" data-search="{{ (r.label or 'beh') | lower }} {{ filename | lower }}">
+          <td class="cell-name">
+            <div class="file ellip">{{ filename }}</div>
+            <div class="meta-line ellip">
+              <span class="muted">Běh:</span> {{ r.label or "Běh" }}
             </div>
-          </div>
-        {% else %}
-          <span class="text-muted">—</span>
-        {% endif %}
-      </td>
+          </td>
 
-      <td class="cell-date mono">
-        {{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}
-      </td>
+          <td class="cell-stats">
+            {% if r.stats %}
+              <div class="stats">
+                <div class="statsbar"
+                     style="--okp: {{ okp }}; --failp: {{ failp }}; --skipp: {{ skipp }};"></div>
+                <div class="statsline">
+                  <span class="muted">{{ r.stats.total }} testů</span>
+                  <span class="ok">✓ {{ r.stats.passed }}</span>
+                  <span class="fail">✕ {{ r.stats.failed }}</span>
+                  <span class="skip">∘ {{ r.stats.skipped }}</span>
+                  <span class="dur mono">{{ r.stats.duration_fmt }}</span>
+                </div>
+              </div>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
 
-      <td class="actions">
-        <a class="btn btn-primary btn-sm"
-           href="{{ url_for('bp.report_view', file=r.csv_path) }}">Zobrazit</a>
-        <a class="btn btn-ghost btn-sm"
-           href="{{ url_for('bp.storage_reports', filename=r.csv_path) }}"
-           target="_blank" rel="noopener">CSV</a>
-      </td>
-    </tr>
-  {% endfor %}
-</tbody>
+          <td class="cell-date mono">
+            {{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}
+          </td>
 
-        </table>
-      </div>
+          <td class="actions">
+            <a class="btn btn-primary btn-sm"
+               href="{{ url_for('bp.report_view', file=r.csv_path) }}">Zobrazit</a>
+            <a class="btn btn-ghost btn-sm"
+               href="{{ url_for('bp.storage_reports', filename=r.csv_path) }}"
+               target="_blank" rel="noopener">CSV</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
     {% else %}
       <div class="empty"><p class="sub">Zatím tu nejsou žádné reporty.</p></div>
     {% endif %}
