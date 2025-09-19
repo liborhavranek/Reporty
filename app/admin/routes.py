@@ -17,7 +17,7 @@ import shutil
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-
+from app.models.pdf_model import PdfReport
 from app.utils.csv_report import parse_report_csv
 
 # =============================================================================
@@ -34,6 +34,12 @@ def _allowed_csv(name: str) -> bool:
 
 def _reports_base() -> str:
     return current_app.config["REPORTS_DIR"]
+
+def _pdfs_base():
+    return current_app.config.get("PDFS_DIR", os.path.join(current_app.instance_path, "pdfs"))
+
+def _allowed_pdf(name: str) -> bool:
+    return os.path.splitext(name)[1].lower() == ".pdf"
 
 def _rm_tree_safe(abs_path: str) -> None:
     """Smaže celý strom, jen pokud leží uvnitř REPORTS_DIR."""
@@ -88,6 +94,15 @@ def _prune_empty_dirs(rel_path: str, stop_at: str | None = None) -> None:
             cur = os.path.dirname(cur)
     except Exception:
         pass
+
+@admin_bp.get("/projects/<int:project_id>/open")
+def project_open(project_id: int):
+
+    p = Project.query.get_or_404(project_id)
+    if (hasattr(p.type, "value") and p.type.value == "web") or str(p.type) == "web":
+        return redirect(url_for("admin.web_pdf_list", project_id=p.id), code=302)
+    # default E2E:
+    return redirect(url_for("admin.suites", project_id=p.id), code=302)
 
 # --------- Ochrana: vše pod /admin kromě /login vyžaduje přihlášení ----------
 @admin_bp.before_request
@@ -573,3 +588,93 @@ def project_detail_public(slug: str):
     if guard:
         return guard
     return render_template("public/project_detail.html", project=project)
+
+# =============================================================================
+# PDF ROUTES
+# =============================================================================
+
+@admin_bp.get("/projects/<int:project_id>/pdfs")
+def web_pdf_list(project_id: int):
+    # jen admini
+    if not session.get("is_admin"):
+        return redirect(url_for("admin.login", next=request.path))
+
+    project = Project.query.get_or_404(project_id)
+    # jen pro WEB projekty
+    if (hasattr(project.type, "value") and project.type.value != "web") and str(project.type) != "web":
+        # u E2E přesměruj zpět na sady
+        return redirect(url_for("admin.suites", project_id=project.id), code=302)
+
+    pdfs = (PdfReport.query
+            .filter_by(project_id=project.id)
+            .order_by(PdfReport.created_at.desc())
+            .all())
+
+    return render_template("admin/web_pdf_list.html", project=project, pdfs=pdfs)
+
+
+@admin_bp.post("/projects/<int:project_id>/pdfs")
+def web_pdf_upload(project_id: int):
+    if not session.get("is_admin"):
+        return redirect(url_for("admin.login", next=request.path))
+
+    project = Project.query.get_or_404(project_id)
+    if (hasattr(project.type, "value") and project.type.value != "web") and str(project.type) != "web":
+        return redirect(url_for("admin.suites", project_id=project.id), code=302)
+
+    f = request.files.get("pdf")
+    label = (request.form.get("label") or "").strip()
+
+    def back():
+        return redirect(url_for("admin.web_pdf_list", project_id=project.id), code=303)
+
+    if not f or not f.filename:
+        flash("Vyber PDF soubor.", "error");  return back()
+    if not f.filename.lower().endswith(".pdf"):
+        flash("Povolené jsou jen .pdf soubory.", "error");  return back()
+
+    ts   = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+    safe = secure_filename(f.filename) or "report.pdf"
+
+    rel_dir  = f"{project.slug}"
+    abs_dir  = os.path.join(current_app.config["PDFS_DIR"], rel_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    rel_path = f"{rel_dir}/{ts}-{safe}"
+    abs_path = os.path.join(current_app.config["PDFS_DIR"], rel_path)
+
+    f.save(abs_path)
+    size = None
+    try: size = os.path.getsize(abs_path)
+    except: pass
+
+    db.session.add(PdfReport(
+        project_id=project.id,
+        pdf_path=rel_path,
+        label=label or os.path.splitext(safe)[0],
+        size=size,
+    ))
+    db.session.commit()
+
+    flash("PDF nahráno.", "success")
+    return back()
+
+
+@admin_bp.post("/projects/<int:project_id>/pdfs/<int:pdf_id>/delete")
+def web_pdf_delete(project_id: int, pdf_id: int):
+    if not session.get("is_admin"):
+        return redirect(url_for("admin.login", next=request.path))
+
+    project = Project.query.get_or_404(project_id)
+    doc = PdfReport.query.filter_by(id=pdf_id, project_id=project.id).first_or_404()
+
+    abs_path = os.path.join(current_app.config["PDFS_DIR"], doc.pdf_path)
+    try:
+        if os.path.exists(abs_path):
+            os.remove(abs_path)
+    finally:
+        db.session.delete(doc)
+        db.session.commit()
+
+    flash("PDF smazáno.", "success")
+    return redirect(url_for("admin.web_pdf_list", project_id=project.id), code=303)

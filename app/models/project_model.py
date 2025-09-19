@@ -55,6 +55,7 @@ class Project(db.Model):
 
     suites = db.relationship("Suite", back_populates="project", cascade="all, delete-orphan")
     runs = db.relationship("Run", back_populates="project", cascade="all, delete-orphan")
+    pdfs = db.relationship("PdfReport", back_populates="project", cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint("name", name="uq_project_name"),

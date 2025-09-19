@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.label }} – {{ project.name }}{% endblock %}
+
+
+{% block content %}
+<section class="hero-report full admin-dense project-page project-hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="project-wrap board-layout">
+    <aside class="side-index">
+      <div class="side-card">
+        <h3 class="side-title">PDF</h3>
+        <div class="kv-pair"><span class="kv-label">Projekt</span><span class="kv-value ellip" title="{{ project.name }}">{{ project.name }}</span></div>
+      </div>
+      <div class="side-card">
+        <h3 class="side-title">Akce</h3>
+        <div class="kv-pair" style="justify-content:flex-start; gap:8px;">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('bp.web_pdf_list', project_id=project.id) }}">← Zpět na seznam</a>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('bp.storage_pdfs', filename=doc.pdf_path) }}" target="_blank" rel="noopener">Stáhnout PDF</a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="board">
+      <header class="card-glass wide card-neo card-shield project-card">
+        <div class="project-head">
+          <div class="project-meta">
+            <div class="project-logo placeholder">PDF</div>
+            <div>
+              <div class="eyebrow">PDF report</div>
+              <h1 class="project-title">{{ doc.label }}</h1>
+              <p class="project-sub mono ellip">{{ doc.pdf_path.rsplit('/',1)[-1] }}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="section-slab card-shield" aria-label="Náhled PDF">
+        <div style="height:78vh; border-radius:12px; overflow:hidden; border:var(--bd); background:rgba(255,255,255,.02);">
+          <iframe
+            src="{{ url_for('bp.storage_pdfs', filename=doc.pdf_path) }}#view=FitH"
+            title="{{ doc.label }}"
+            style="width:100%; height:100%; border:0;"
+          ></iframe>
+        </div>
+        <div class="cta-row" style="margin-top:10px;">
+          <a class="btn btn-primary" href="{{ url_for('bp.storage_pdfs', filename=doc.pdf_path) }}" target="_blank" rel="noopener">Otevřít / stáhnout</a>
+          <a class="btn btn-ghost" href="{{ url_for('bp.web_pdf_list', project_id=project.id) }}">Zpět</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

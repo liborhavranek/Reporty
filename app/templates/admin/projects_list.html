@@ -106,7 +106,7 @@
 
                 <td class="col-actions">
                   <div class="actions">
-                    <a class="btn btn-ghost" href="{{ url_for('admin.project_detail_admin', project_id=p.id) }}">Spravovat</a>
+                    <a class="btn btn-ghost" href="{{ url_for('admin.project_open', project_id=p.id) }}">Spravovat</a>
                     <a class="btn btn-ghost" href="{{ url_for('admin.projects_edit', project_id=p.id) }}" aria-label="Upravit {{ p.name }}">Upravit</a>
                     <form method="post"
                           action="{{ url_for('admin.projects_delete', project_id=p.id) }}"

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}PDF reporty – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full admin-dense project-page project-hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="project-wrap board-layout">
+    <aside class="side-index">
+      <div class="side-card">
+        <h3 class="side-title">Projekt</h3>
+        <div class="kv-pair"><span class="kv-label">Typ</span><span class="kv-value">{{ project.type.value|upper }}</span></div>
+        {% set v = project.visibility.value %}
+        <div class="kv-pair"><span class="kv-label">Viditelnost</span><span class="kv-value">{{ 'PUBLIC' if v=='public' else ('LINK' if v=='link-only' else 'PRIVATE') }}</span></div>
+      </div>
+      <div class="side-card">
+        <h3 class="side-title">Navigace</h3>
+        <div class="kv-pair" style="justify-content:flex-start; gap:8px;">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('bp.public_projects_list') }}">← Zpět na projekty</a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="board">
+      <header class="card-glass wide card-neo card-shield project-card">
+        <div class="project-head">
+          <div class="project-meta">
+            {% if project.logo_path %}
+              <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
+            {% else %}
+              <div class="project-logo placeholder">{{ project.name[:1] }}</div>
+            {% endif %}
+            <div>
+              <div class="eyebrow">PDF reporty</div>
+              <h1 class="project-title">{{ project.name }}</h1>
+              {% if project.description %}<p class="project-sub">{{ project.description }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {% if pdfs and pdfs|length %}
+        <div class="table-wrap">
+          <table class="table nice runs-table" aria-label="Seznam PDF reportů">
+            <thead>
+              <tr>
+                <th style="width:60%;">Název / soubor</th>
+                <th>Vytvořeno</th>
+                <th class="col-actions">Akce</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in pdfs %}
+                {% set fname = d.pdf_path.rsplit('/',1)[-1] %}
+                <tr>
+                  <td class="cell-name">
+                    <div class="name ellip">{{ d.label }}</div>
+                    <div class="meta-line"><code class="mono ellip">{{ fname }}</code></div>
+                  </td>
+                  <td class="cell-date mono">
+                    {{ d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else '—' }}
+                  </td>
+<td class="actions">
+  {# Otevře se v novém panelu v prohlížečovém PDF vieweru #}
+  <a class="btn btn-primary btn-sm"
+     href="{{ url_for('bp.storage_pdfs', filename=d.pdf_path) }}#view=FitH"
+     target="_blank" rel="noopener">
+     Zobrazit
+  </a>
+
+  {# Přímé stažení souboru #}
+  <a class="btn btn-ghost btn-sm"
+     href="{{ url_for('bp.storage_pdfs', filename=d.pdf_path) }}"
+     download>
+     Stáhnout
+  </a>
+</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty"><p class="sub">Zatím žádné PDF reporty.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

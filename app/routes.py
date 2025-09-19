@@ -14,6 +14,7 @@ from app.utils.csv_report import parse_report_csv
 from flask import Blueprint, render_template, send_from_directory, current_app
 from app.models.project_model import Project
 from app.models.suite_model import Suite
+from app.models.pdf_model import PdfReport
 
 bp = Blueprint("bp", __name__)
 
@@ -49,6 +50,13 @@ def _require_or_redirect(project: Project):
         return redirect(url_for("bp.project_access", slug=project.slug, next=request.full_path))
     return None
 
+@bp.get("/storage/pdfs/<path:filename>")
+def storage_pdfs(filename: str):
+    safe = os.path.normpath(filename).lstrip("/\\")
+    if safe.startswith(("..", "/", "\\")):
+        abort(404)
+    return send_from_directory(current_app.config["PDFS_DIR"], safe, conditional=True)
+
 @bp.route("/")
 def home():
     return render_template("index.html", title="Reporty")
@@ -64,6 +72,13 @@ def public_projects_list():
 
     projects = query.order_by(Project.created_at.desc()).all()
     return render_template("projects_list.html", projects=projects, q=q)
+
+@bp.get("/projects/<int:project_id>/open")
+def project_open(project_id: int):
+    p = Project.query.get_or_404(project_id)
+    if (hasattr(p.type, "value") and p.type.value == "web") or str(p.type) == "web":
+        return redirect(url_for("bp.web_pdf_list", project_id=p.id), code=302)
+    return redirect(url_for("bp.project_detail", slug=p.slug), code=302)
 
 
 def _has_project_access(project) -> bool:
@@ -204,3 +219,22 @@ def project_access(slug):
 
     return render_template("project_access.html", project=project, next_url=next_url)
 
+@bp.get("/projects/<int:project_id>/pdfs")
+def web_pdf_list(project_id: int):
+    project = Project.query.get_or_404(project_id)
+
+    # gate: respektuj heslo/visibility stejně jako jinde
+    gate = _require_or_redirect(project)
+    if gate:
+        return gate
+
+    # jen pro WEB projekty
+    if (hasattr(project.type, "value") and project.type.value != "web") and str(project.type) != "web":
+        abort(404)
+
+    pdfs = (PdfReport.query
+            .filter_by(project_id=project.id)
+            .order_by(PdfReport.created_at.desc())
+            .all())
+
+    return render_template("web_pdf_list.html", project=project, pdfs=pdfs)

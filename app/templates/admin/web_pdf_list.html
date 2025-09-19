@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}PDF reporty – {{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-report full admin-dense project-page project-hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="project-wrap board-layout">
+    <!-- Sidebar s metadaty -->
+    <aside class="side-index">
+      <div class="side-card">
+        <h3 class="side-title">Projekt</h3>
+        <div class="kv-pair"><span class="kv-label">Typ</span><span class="kv-value">{{ project.type.value|upper }}</span></div>
+        {% set v = project.visibility.value %}
+        <div class="kv-pair"><span class="kv-label">Viditelnost</span><span class="kv-value">{{ 'PUBLIC' if v=='public' else ('LINK' if v=='link-only' else 'PRIVATE') }}</span></div>
+      </div>
+      <div class="side-card">
+        <h3 class="side-title">Akce</h3>
+        <div class="kv-pair" style="justify-content:flex-start; gap:8px;">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.projects') }}">← Zpět na projekty</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Pravý board -->
+    <div class="board">
+      <!-- Hlavička projektu -->
+      <header class="card-glass wide card-neo card-shield project-card" aria-labelledby="project-title">
+        <div class="project-head">
+          <div class="project-meta">
+            {% if project.logo_path %}
+              <img src="{{ url_for('bp.storage_logos', filename=project.logo_path) }}" alt="" class="project-logo">
+            {% else %}
+              <div class="project-logo placeholder">{{ project.name[:1] }}</div>
+            {% endif %}
+            <div>
+              <div class="eyebrow">Admin · PDF reporty</div>
+              <h1 id="project-title" class="project-title">{{ project.name }}</h1>
+              {% if project.description %}<p class="project-sub">{{ project.description }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Upload box (kompaktní) -->
+      <section class="section-slab card-shield" aria-label="Nahrát PDF">
+        <div class="slab-head" style="margin-bottom:6px;">
+          <h2 class="slab-title">Nahrát PDF report</h2>
+          <div class="slab-meta">
+            <span class="slab-chip">Podporováno: PDF</span>
+          </div>
+        </div>
+
+        <form class="quick-upload" method="post" enctype="multipart/form-data"
+              action="{{ url_for('admin.web_pdf_upload', project_id=project.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div style="display:grid; grid-template-columns: minmax(220px, 360px) 1fr; gap:10px; align-items:start;">
+            <div style="display:grid; gap:8px;">
+              <input class="input" type="text" name="label" placeholder="Volitelný název PDF…" />
+              <input class="qu-file" type="file" name="pdf" accept="application/pdf" hidden>
+              <div class="dropzone" tabindex="0"
+                   style="min-height:84px; display:grid; place-items:center; gap:6px; padding:12px;"
+                   onclick="this.closest('form').querySelector('.qu-file').click()">
+                <div class="dz-icon" style="width:30px; height:30px;">⬆︎</div>
+                <div class="dz-title" style="font-weight:900;">Přetáhni PDF sem</div>
+                <div class="dz-sub">…nebo klikni pro výběr</div>
+              </div>
+            </div>
+
+            <div class="softnote small">
+              <b>Tip:</b> Soubor se po výběru nahraje automaticky. Velikost je omezena na {{ (config.MAX_CONTENT_LENGTH // (1024*1024)) if config.MAX_CONTENT_LENGTH else 5 }}&nbsp;MB.
+            </div>
+          </div>
+        </form>
+      </section>
+
+      {% if pdfs and pdfs|length %}
+        <div class="table-wrap">
+          <table class="table nice runs-table" aria-label="Seznam PDF reportů">
+            <thead>
+              <tr>
+                <th style="width:50%;">Název / soubor</th>
+                <th>Velikost</th>
+                <th>Vytvořeno</th>
+                <th class="col-actions">Akce</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in pdfs %}
+                {% set fname = d.pdf_path.rsplit('/',1)[-1] %}
+                <tr>
+                  <td class="cell-name">
+                    <div class="name ellip">{{ d.label }}</div>
+                    <div class="meta-line"><code class="mono ellip">{{ fname }}</code></div>
+                  </td>
+                  <td class="mono">
+                    {% if d.size %}{{ (d.size/1024/1024)|round(2) }}&nbsp;MB{% else %}—{% endif %}
+                  </td>
+                  <td class="cell-date mono">
+                    {{ d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else '—' }}
+                  </td>
+                  <td class="actions">
+                    {# Otevře se v novém panelu v prohlížečovém PDF vieweru #}
+                    <a class="btn btn-primary btn-sm"
+                       href="{{ url_for('bp.storage_pdfs', filename=d.pdf_path) }}#view=FitH"
+                       target="_blank" rel="noopener">
+                       Zobrazit
+                    </a>
+
+                    {# Přímé stažení souboru #}
+                    <a class="btn btn-ghost btn-sm"
+                       href="{{ url_for('bp.storage_pdfs', filename=d.pdf_path) }}"
+                       download>
+                       Stáhnout
+                    </a>
+                    <form method="post" action="{{ url_for('admin.web_pdf_delete', project_id=project.id, pdf_id=d.id) }}"
+                          onsubmit="return confirm('Smazat PDF {{ d.label }}?');" style="display:inline-block;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-danger btn-sm" type="submit">Smazat</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty"><p class="sub">Zatím žádné PDF reporty.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Auto-submit po výběru PDF
+  document.querySelectorAll('.quick-upload .qu-file').forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length > 0) input.closest('form').submit();
+    });
+  });
+
+  // Drag & drop
+  document.querySelectorAll('.quick-upload .dropzone').forEach(zone => {
+    const form = zone.closest('form');
+    const fileInput = form.querySelector('.qu-file');
+    ['dragenter','dragover'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('is-dragover'); })
+    );
+    ['dragleave','drop'].forEach(evt =>
+      zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('is-dragover'); })
+    );
+    zone.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      if (!files || !files.length) return;
+      const file = files[0];
+      if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Povoleno pouze PDF.'); return; }
+      const dt = new DataTransfer(); dt.items.add(file);
+      fileInput.files = dt.files; form.submit();
+    });
+  });
+});
+</script>
+{% endblock %}

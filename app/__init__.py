@@ -21,13 +21,15 @@ def create_app(test_config=None):
     BASE_DIR   = os.path.abspath(os.path.dirname(__file__))
     DATA_DIR   = os.getenv("DATA_DIR", os.path.join(BASE_DIR, "..", "data"))
     DB_PATH    = os.getenv("SQLITE_PATH", os.path.join(DATA_DIR, "app.db"))
-    UPLOAD_DIR = os.getenv("UPLOAD_DIR", os.path.join(BASE_DIR, "..", "storage", "logos"))
-    REPORTS_DIR = os.getenv("REPORTS_DIR", os.path.join(BASE_DIR, "..", "storage", "reports"))  # <—
+    UPLOAD_DIR  = os.getenv("UPLOAD_DIR",  os.path.join(BASE_DIR, "..", "storage", "logos"))
+    REPORTS_DIR = os.getenv("REPORTS_DIR", os.path.join(BASE_DIR, "..", "storage", "reports"))  # CSV
+    PDFS_DIR    = os.getenv("PDFS_DIR",    os.path.join(BASE_DIR, "..", "storage", "pdfs"))     # <-- PDF
     MAX_MB     = int(os.getenv("MAX_CONTENT_LENGTH_MB", "5"))
 
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    os.makedirs(REPORTS_DIR, exist_ok=True)  # <— vytvoř adresář pro CSV
+    os.makedirs(UPLOAD_DIR,  exist_ok=True)
+    os.makedirs(REPORTS_DIR, exist_ok=True)  # CSV
+    os.makedirs(PDFS_DIR,    exist_ok=True)  # <-- PDF <— vytvoř adresář pro CSV
 
     # ---- Konfigurace aplikace ----
     app.config.from_mapping(
@@ -52,7 +54,8 @@ def create_app(test_config=None):
 
         # Uploady
         UPLOAD_DIR=UPLOAD_DIR,
-        REPORTS_DIR=REPORTS_DIR,               # <— zaregistrované v configu
+        REPORTS_DIR=REPORTS_DIR,  # CSV
+        PDFS_DIR=PDFS_DIR,        # <-- PDF             # <— zaregistrované v configu
         MAX_CONTENT_LENGTH=MAX_MB * 1024 * 1024,
 
         # Dev
@@ -93,6 +96,7 @@ def create_app(test_config=None):
     from .models.project_model import Project  # noqa
     from .models.suite_model import Suite      # noqa
     from .models.run_model import Run          # noqa
+    from .models.pdf_model import PdfReport  # noqa
 
     # Healthcheck
     @app.get("/healthz")

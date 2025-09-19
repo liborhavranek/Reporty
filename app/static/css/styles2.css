@@ -1459,3 +1459,68 @@ code.mono{ font-size:12.5px; padding:2px 6px; border-radius:8px; border:var(--bd
 .runs-table.compact thead th:nth-child(2){ width:auto; }/* Souhrn roztáhne zbytek */
 .runs-table.compact thead th:nth-child(3){ white-space:nowrap; } /* Datum */
 .runs-table.compact thead th:nth-child(4){ width:1%; white-space:nowrap; } /* Akce */
+
+/* =======================================================================================
+   21) PDF Reader (glass + shield)
+   ======================================================================================= */
+.pdf-shell.card-glass.card-shield{
+  padding: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.pdf-toolbar{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px; border-bottom:var(--bd);
+  background: var(--glass); box-shadow: var(--sh-soft-inset);
+}
+.pdf-toolbar .spacer{ flex:1 1 auto; }
+.pdf-toolbar .meta{
+  display:flex; align-items:center; gap:10px; font: 700 12px var(--mono); color:var(--muted);
+  padding:6px 10px; border:var(--bd); border-radius:10px; background:rgba(255,255,255,.04);
+}
+.pdf-btn{ padding:8px 10px; border-radius:10px; }
+.pdf-btn[disabled]{ opacity:.5; pointer-events:none; }
+
+.pdf-canvas-wrap{
+  position:relative; background:rgba(255,255,255,.02);
+  max-height: calc(100svh - 240px);
+  overflow:auto;
+}
+.pdf-page{
+  display:grid; place-items:center;
+  padding:18px; /* příjemný okraj kolem PDF */
+}
+.pdf-page canvas{
+  box-shadow: 0 18px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.035);
+  border-radius: 12px; background:#fff;
+}
+
+/* vstupy v toolbaru */
+.pdf-toolbar input[type="number"]{
+  width:80px; padding:8px 10px; border-radius:10px; border:var(--bd);
+  background:rgba(255,255,255,.04); color:var(--text); font:inherit;
+}
+.pdf-toolbar .btn-group{ display:flex; gap:6px; align-items:center; }
+
+/* malé verze tlačítek, ale v našem stylu */
+.btn.btn-ghost.btn-xs, .btn.btn-primary.btn-xs{
+  padding:6px 10px; font-size:12px; border-radius:10px;
+}
+
+/* shield proti mřížce v pozadí */
+.project-hero .pdf-shell.card-shield::before{
+  content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit;
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.90), rgba(15,23,42,.86)),
+    radial-gradient(1200px 620px at 65% -15%, color-mix(in oklab, var(--accent) 20%, transparent), transparent 60%),
+    radial-gradient(1000px 560px at 10% 100%, color-mix(in oklab, var(--accent-2) 16%, transparent), transparent 62%),
+    linear-gradient(180deg, #0a1120 0%, #0d1630 52%, #0b1428 100%);
+  filter:saturate(1.02) blur(3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* Responsivita */
+@media (max-width: 780px){
+  .pdf-toolbar{ gap:6px; }
+  .pdf-toolbar .meta{ display:none; }
+}
